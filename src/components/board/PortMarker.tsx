@@ -30,6 +30,10 @@ export function PortMarker({ port, boardCenter, a, b, scale }: PortMarkerProps) 
 
   return (
     <g className="port-marker">
+      {/* A dark under-line first, then the pale dashed rope on top — keeps the
+          dock line readable over the light sand as well as the dark water. */}
+      <line x1={badgeX} y1={badgeY} x2={a.x} y2={a.y} className="port-marker__dock-shadow" />
+      <line x1={badgeX} y1={badgeY} x2={b.x} y2={b.y} className="port-marker__dock-shadow" />
       <line x1={badgeX} y1={badgeY} x2={a.x} y2={a.y} className="port-marker__dock" />
       <line x1={badgeX} y1={badgeY} x2={b.x} y2={b.y} className="port-marker__dock" />
       {/* rotate(90) cancels the board's -90 rotation so the ratio/icon stay upright. */}

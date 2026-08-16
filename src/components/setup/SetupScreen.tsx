@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { MAX_PLAYERS, MIN_PLAYERS, PLAYER_COLORS } from '../../game/engine/gameEngine';
 import { PLAYER_COLOR_HEX } from '../../data/terrainTheme';
 import { validatePlayerPins } from '../../utils/pin';
+import { HowToPlayModal } from '../help/HowToPlayModal';
 
 interface SetupScreenProps {
   onStart: (playerNames: string[], playerPins: string[]) => void;
@@ -13,6 +14,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
   const [names, setNames] = useState<string[]>(['', '', '', '']);
   const [pins, setPins] = useState<string[]>(['', '', '', '']);
   const [showErrors, setShowErrors] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleNameChange = (index: number, value: string) => {
     setNames((prev) => {
@@ -52,6 +54,10 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
         <h1 className="setup-title">CATAN</h1>
         <p className="setup-subtitle">Build · Trade · Conquer</p>
         <p className="setup-tagline">Gather around the table.</p>
+
+        <button type="button" className="setup-help-link" onClick={() => setShowHelp(true)}>
+          📖 New here? Learn how to play
+        </button>
 
         <div className="setup-player-count">
           {[MIN_PLAYERS, MAX_PLAYERS].map((count) => (
@@ -115,6 +121,8 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
           START GAME
         </button>
       </div>
+
+      {showHelp && <HowToPlayModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }

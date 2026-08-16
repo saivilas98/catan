@@ -92,32 +92,30 @@ export function RoadPiece({ from, to, color, scale }: RoadPieceProps) {
 
 /**
  * The single black robber figure — an original piece, not tied to any player
- * color. Sized up from the first pass (he kept getting lost against busier
- * terrain art) and given a strong two-layer ember aura — a wide soft glow plus
- * a tighter bright core — so he stays clearly visible against every terrain,
- * light desert sand included, reading as a menacing presence rather than just
- * another small piece on the tile.
+ * color. Sized well up from the first pass (he kept getting lost against busy
+ * terrain art), with a soft two-layer ember aura that blends into the tile
+ * rather than sitting on top of it as a visible shape.
  */
 export function RobberPiece({ scale }: { scale: number }) {
-  const h = scale * 0.86;
+  const h = scale * 1.12;
   const w = h * ROBBER_ASPECT;
 
   return (
     <g className="piece piece--robber" transform={`translate(0 ${-scale * 0.05})`}>
       <defs>
-        <radialGradient id="robber-aura-outer" cx="50%" cy="42%" r="62%">
-          <stop offset="0%" stopColor="#ff8a3d" stopOpacity="0.55" />
-          <stop offset="60%" stopColor="#ff6a2d" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#ff6a2d" stopOpacity="0" />
+        <radialGradient id="robber-aura-outer" cx="50%" cy="40%" r="62%">
+          <stop offset="0%" stopColor="#ffa14d" stopOpacity="0.6" />
+          <stop offset="45%" stopColor="#ff7a2d" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#ff7a2d" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id="robber-aura-core" cx="50%" cy="42%" r="45%">
-          <stop offset="0%" stopColor="#ffd39a" stopOpacity="0.85" />
-          <stop offset="70%" stopColor="#ff9a4d" stopOpacity="0.4" />
-          <stop offset="100%" stopColor="#ff9a4d" stopOpacity="0" />
+        <radialGradient id="robber-aura-core" cx="50%" cy="40%" r="42%">
+          <stop offset="0%" stopColor="#fff0d2" stopOpacity="0.7" />
+          <stop offset="55%" stopColor="#ffb066" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#ffb066" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <circle cx={0} cy={-h * 0.26} r={w * 1.55} fill="url(#robber-aura-outer)" className="robber-aura robber-aura--outer" />
-      <circle cx={0} cy={-h * 0.26} r={w * 0.95} fill="url(#robber-aura-core)" className="robber-aura robber-aura--core" />
+      <circle cx={0} cy={-h * 0.24} r={w * 1.55} fill="url(#robber-aura-outer)" className="robber-aura robber-aura--outer" />
+      <circle cx={0} cy={-h * 0.24} r={w * 0.95} fill="url(#robber-aura-core)" className="robber-aura robber-aura--core" />
       <ellipse cx={0} cy={scale * 0.24} rx={w * 0.46} ry={h * 0.1} fill="rgba(0,0,0,0.45)" />
       <image href={ROBBER_ART} x={-w / 2} y={-h + scale * 0.22} width={w} height={h} />
     </g>
