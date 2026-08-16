@@ -371,6 +371,90 @@
   }
 }
 
+/*
+ * ---------- iPad / touch tablets: maximize board space ----------
+ * Scoped to `pointer: coarse` + `hover: none`, which only real touch
+ * devices report — a desktop or laptop browser (mouse or trackpad, even
+ * with its window resized down to a tablet-like width) always reports
+ * `pointer: fine` / `hover: hover` and never matches this block. Nothing
+ * here can affect the existing laptop/desktop layout above.
+ */
+@media (pointer: coarse) and (hover: none) and (min-width: 901px) {
+  .main-row {
+    grid-template-columns: minmax(180px, 15%) 1fr minmax(180px, 16%);
+    gap: 0.55rem;
+    padding: 0.55rem;
+  }
+
+  .sidebar {
+    gap: 0.55rem;
+  }
+
+  .player-console {
+    gap: 0.55rem;
+    padding-top: 0.65rem;
+  }
+}
+
+@media (pointer: coarse) and (hover: none) and (max-width: 900px) {
+  .main-row {
+    grid-template-columns: 1fr;
+    /*
+     * Both sidebars are capped to a max-height below (each scrolls
+     * internally past that), and the board takes the 1fr row — i.e.
+     * whatever's left, guaranteed, with no possibility of the rows
+     * overlapping. (A `vh`-sized board row here previously raced against
+     * the sidebars' own natural content height for the same space and
+     * sometimes lost, letting the board row overflow into the row below
+     * it — 1fr can't do that: Grid hands it the exact remainder.)
+     */
+    grid-template-rows: auto 1fr auto;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    overflow: hidden;
+  }
+
+  .board-stage {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .sidebar {
+    gap: 0.5rem;
+  }
+
+  /* The right sidebar has no anchored footer, so it can simply cap and
+     scroll as a whole. */
+  .sidebar--right {
+    max-height: 21vh;
+    overflow-y: auto;
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent 100%);
+  }
+
+  .sidebar--left {
+    padding-right: 0;
+    /* Caps the *aside's total* height too, so it can never push the board
+       row shorter than its 1fr share — the inner player-console (below)
+       is what actually scrolls, keeping the anchored End Turn bar right
+       after it instead of stranded off-screen. */
+    max-height: 27vh;
+    overflow: hidden;
+  }
+
+  .player-console {
+    padding: 0.5rem 0.1rem 0.1rem 0;
+    max-height: calc(27vh - 3.2rem);
+    /* This scrolls without a visible scrollbar on iPadOS — a soft fade at
+       the bottom edge is the only hint there's more below, so cut the
+       content out gradually instead of with a hard, easy-to-miss edge. */
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent 100%);
+  }
+
+  .end-turn-bar {
+    padding-top: 0.4rem;
+  }
+}
+
 /* ---------- Turn panel + dice ---------- */
 
 .turn-panel {
