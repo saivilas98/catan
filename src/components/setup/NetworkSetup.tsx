@@ -18,6 +18,7 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [connecting, setConnecting] = useState(false);
+  const [slowConnect, setSlowConnect] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lanAddresses, setLanAddresses] = useState<string[] | null>(null);
 
@@ -49,33 +50,57 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
 
     setError(null);
     setConnecting(true);
+    setSlowConnect(false);
     const client = new GameClient(url);
     // If this browser already joined this exact host address before (e.g. the
     // tab was closed and reopened mid-game), reuse that seat instead of
     // joining as a brand new player — see server/lobby.ts's reconnect handling.
     const savedSession = loadSession(url);
 
-    const unsubscribe = client.onMessage((message) => {
-      if (message.type === 'JOINED') {
-        unsubscribe();
-        saveSession(url, { reconnectToken: message.reconnectToken, name: trimmedName });
-        onConnected(client, message.playerId, message.isHost);
-      } else if (message.type === 'ERROR') {
-        unsubscribe();
-        setConnecting(false);
-        setError(message.message);
-        client.close();
-      }
-    });
+    let settled = false;
+    const cleanups: (() => void)[] = [];
+    const cleanup = () => cleanups.forEach((fn) => fn());
 
-    client.onOpen(() =>
-      client.send({ type: 'JOIN', name: trimmedName, reconnectToken: savedSession?.reconnectToken })
-    );
-    client.onError(() => {
+    // A free-tier host (e.g. Render) that's been idle can take up to ~50s to
+    // wake up, dropping the very first connection attempt or two along the
+    // way. GameClient already retries with backoff on its own, so a single
+    // early failure must not surface as a dead end — only give up for real
+    // after a generous overall timeout.
+    const slowTimer = window.setTimeout(() => setSlowConnect(true), 5000);
+    const giveUpTimer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
       setConnecting(false);
-      setError('Could not reach that address.');
-    });
-    client.onClose(() => setConnecting(false));
+      setError('Could not reach that address. If the host just woke up from sleep, try again in a moment.');
+      client.close();
+    }, 25000);
+    cleanups.push(() => window.clearTimeout(slowTimer));
+    cleanups.push(() => window.clearTimeout(giveUpTimer));
+
+    cleanups.push(
+      client.onMessage((message) => {
+        if (settled) return;
+        if (message.type === 'JOINED') {
+          settled = true;
+          cleanup();
+          saveSession(url, { reconnectToken: message.reconnectToken, name: trimmedName });
+          onConnected(client, message.playerId, message.isHost);
+        } else if (message.type === 'ERROR') {
+          settled = true;
+          cleanup();
+          setConnecting(false);
+          setError(message.message);
+          client.close();
+        }
+      })
+    );
+    cleanups.push(
+      client.onOpen(() =>
+        client.send({ type: 'JOIN', name: trimmedName, reconnectToken: savedSession?.reconnectToken })
+      )
+    );
+    // Deliberately no handling on error/close here — see the comment above.
   };
 
   return (
@@ -132,8 +157,14 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
         {error && <p className="setup-pin-error">{error}</p>}
 
         <button type="button" className="setup-start-btn" onClick={handleConnect} disabled={connecting}>
-          {connecting ? 'Connecting…' : 'Connect'}
+          {connecting ? (slowConnect ? 'Still trying…' : 'Connecting…') : 'Connect'}
         </button>
+        {connecting && slowConnect && (
+          <p className="setup-pin-hint">
+            Taking a while — if the host is on a free hosting tier, it can take up to a
+            minute to wake up from sleep.
+          </p>
+        )}
         <button type="button" className="setup-help-link" onClick={onBack}>
           ← Back
         </button>
