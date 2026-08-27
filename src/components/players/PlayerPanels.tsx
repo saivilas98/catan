@@ -7,25 +7,32 @@ import { PlayerPanel } from './PlayerPanel';
 interface PlayerPanelsProps {
   game: GameState;
   className?: string;
+  /** See PlayerPanel's `viewerPlayerId` — omitted in local mode. */
+  viewerPlayerId?: string;
 }
 
-export function PlayerPanels({ game, className }: PlayerPanelsProps) {
+export function PlayerPanels({ game, className, viewerPlayerId }: PlayerPanelsProps) {
   const gameOver = game.phase === 'GAME_OVER';
 
   return (
     <div className={`player-panels${className ? ` ${className}` : ''}`}>
       {game.players.map((player) => {
         const isCurrent = player.id === game.currentPlayerId;
-        // Hidden Victory Point cards are private: only surfaced to the player
-        // whose turn it is, or to everyone once the game has ended.
+        const isViewer = viewerPlayerId ? player.id === viewerPlayerId : isCurrent;
+        // Hidden Victory Point cards are private: only surfaced to this panel's
+        // own viewer, or to everyone once the game has ended. In network mode
+        // countVictoryPointCards naturally returns 0 for anyone else anyway
+        // (their development cards arrive already redacted), but skip the call
+        // entirely for clarity rather than relying on that alone.
         const hiddenVictoryPoints =
-          isCurrent || gameOver ? countVictoryPointCards(game, player.id) : 0;
+          isViewer || gameOver ? countVictoryPointCards(game, player.id) : 0;
 
         return (
           <PlayerPanel
             key={player.id}
             player={player}
             isCurrent={isCurrent}
+            viewerPlayerId={viewerPlayerId}
             ports={getPlayerPorts(game, player.id)}
             hasLargestArmy={game.largestArmyPlayerId === player.id}
             hasLongestRoad={game.longestRoadPlayerId === player.id}

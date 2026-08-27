@@ -25,6 +25,12 @@ import {
 import { fixedDiceRng } from './game/utils/fixedRng';
 import { PLAYER_COLOR_HEX } from './data/terrainTheme';
 import { SetupScreen } from './components/setup/SetupScreen';
+import { ModeSelect } from './components/setup/ModeSelect';
+import type { SessionMode } from './components/setup/ModeSelect';
+import { NetworkSetup } from './components/setup/NetworkSetup';
+import { NetworkLobby } from './components/setup/NetworkLobby';
+import { clearSession, type GameClient } from './net/client';
+import { NetworkTransport } from './net/networkTransport';
 import { HexBoard } from './components/board/HexBoard';
 import type { PlacementMode } from './components/board/HexBoard';
 import { PlayerPanels } from './components/players/PlayerPanels';
@@ -75,6 +81,42 @@ function App() {
   // Which development card is mid-play and waiting on the player's choice.
   const [cardPrompt, setCardPrompt] = useState<'monopoly' | 'yearOfPlenty' | null>(null);
 
+  // --- LAN network mode. null until the player picks a mode on the very first
+  // screen; 'local' renders the existing pass-and-play SetupScreen untouched.
+  // 'host'/'join' route through NetworkSetup -> NetworkLobby instead. Sprint C
+  // wires the lobby's "game started" signal into a real networked GameState;
+  // for now these only exist pre-game, so `game` itself is unaffected. ---
+  const [sessionMode, setSessionMode] = useState<SessionMode | null>(null);
+  const [networkClient, setNetworkClient] = useState<GameClient | null>(null);
+  const [networkPlayerId, setNetworkPlayerId] = useState<string | null>(null);
+  // The lobby's playerId (above) and the GameState's own player ids are two
+  // separate id spaces — the engine assigns ids independent of join order. Set
+  // once YOUR_GAME_PLAYER_ID arrives, right as the game starts (see
+  // onGameStarted below); everything that reads game.players[] must key off
+  // this, never off the lobby id.
+  const [gamePlayerId, setGamePlayerId] = useState<string | null>(null);
+  // True while the socket is dropped and GameClient is auto-reconnecting.
+  const [networkConnectionLost, setNetworkConnectionLost] = useState(false);
+  const [networkIsHost, setNetworkIsHost] = useState(false);
+
+  const networkUnsubscribeRef = useRef<(() => void) | null>(null);
+
+  const resetNetworkState = useCallback(() => {
+    networkUnsubscribeRef.current?.();
+    networkUnsubscribeRef.current = null;
+    networkTransportRef.current = null;
+    if (networkClient) clearSession(networkClient.getUrl());
+    networkClient?.close();
+    setNetworkClient(null);
+    setNetworkPlayerId(null);
+    setGamePlayerId(null);
+    setNetworkIsHost(false);
+    setNetworkConnectionLost(false);
+    setSessionMode(null);
+    gameRef.current = null;
+    setGame(null);
+  }, [networkClient]);
+
   // --- Privacy state. Deliberately local UI state, never part of GameState: PINs
   // and "who can currently see whose hand" are not Catan rules, and keeping them
   // out of the engine keeps every existing engine test untouched. ---
@@ -108,9 +150,25 @@ function App() {
     setGame(next);
   }, []);
 
-  /** Single funnel from UI intent to engine action; surfaces engine errors verbatim. */
+  // Set once a network game starts (see NetworkLobby's onGameStarted below).
+  // While set, dispatch routes actions over the wire instead of running the
+  // engine locally — the host is the only process that ever calls applyAction
+  // for that session.
+  const networkTransportRef = useRef<NetworkTransport | null>(null);
+
+  /**
+   * Single funnel from UI intent to engine action; surfaces engine errors verbatim.
+   * In network mode this is fire-and-forget: there is no client-side prediction,
+   * so the boolean return is optimistic (the action was sent, not that it
+   * succeeded) — the authoritative result arrives later via the transport's
+   * subscribe() callback, same as commit() does for local mode.
+   */
   const dispatch = useCallback(
     (action: GameAction, deps?: ActionDeps): boolean => {
+      if (networkTransportRef.current) {
+        networkTransportRef.current.dispatch(action);
+        return true;
+      }
       const current = gameRef.current;
       if (!current) return false;
       const result = applyAction(current, action, deps);
@@ -150,7 +208,11 @@ function App() {
   // turn is in, changes for ANY reason, the private card view closes. This covers
   // every case in the spec (turn end, robber phase, discard phase, ...) with one
   // rule instead of chasing each transition individually.
-  const privacyGuardKey = game ? `${game.currentPlayerId}:${game.turnPhase}` : null;
+  // Local mode only: in network mode each device only ever holds its own
+  // player's real hand (see redactState.ts), so there is nothing to re-hide
+  // when the turn passes to someone else — that player's data never arrived.
+  const privacyGuardKey =
+    sessionMode === 'local' && game ? `${game.currentPlayerId}:${game.turnPhase}` : null;
   const previousPrivacyGuardKey = useRef<string | null>(null);
   useEffect(() => {
     if (previousPrivacyGuardKey.current !== null && previousPrivacyGuardKey.current !== privacyGuardKey) {
@@ -197,10 +259,18 @@ function App() {
 
   /** Returns to the setup screen; starting from there builds a fresh board and state. */
   const handleNewGame = () => {
+    // Network mode: tear down the socket/transport too, or stray STATE
+    // messages arriving right after would resurrect `game` via commit().
+    if (sessionMode !== 'local') {
+      resetNetworkState();
+      setConfirmNewGameOpen(false);
+      return;
+    }
     gameRef.current = null;
     setGame(null);
     setError(null);
     setMode('none');
+    setSessionMode(null);
     setTradeOpen(false);
     setPins({});
     closePrivateCards();
@@ -225,6 +295,15 @@ function App() {
     if (!current) return;
     setMode('none');
     setTradeOpen(false);
+    // Local mode only: network mode's own hand stays visible on this device for
+    // the whole session (see NetworkLobby's onGameStarted), there is no shared
+    // screen to hand off, and dispatch() there is fire-and-forget, so
+    // gameRef.current right after calling it is still the OLD state, not the
+    // next player — reading it here would show the handoff for the wrong player.
+    if (sessionMode !== 'local') {
+      dispatch({ type: 'END_TURN', playerId: current.currentPlayerId });
+      return;
+    }
     closePrivateCards();
     const ok = dispatch({ type: 'END_TURN', playerId: current.currentPlayerId });
     if (ok && gameRef.current && gameRef.current.phase === 'PLAYING') {
@@ -328,6 +407,10 @@ function App() {
   // --- Privacy: PIN entry and the private card view ---
 
   const handleOpenPin = () => {
+    // Network mode: this device already only ever received its own player's
+    // real cards (see redactState.ts) and unlockedPlayerId is set for the whole
+    // session in NetworkLobby's onGameStarted — there is nothing to unlock.
+    if (sessionMode !== 'local') return;
     setPinError(null);
     setPinModalOpen(true);
   };
@@ -500,16 +583,83 @@ function App() {
   );
 
   if (!game) {
-    return <SetupScreen onStart={startGame} />;
+    if (sessionMode === null) {
+      return <ModeSelect onSelect={setSessionMode} />;
+    }
+    if (sessionMode === 'local') {
+      return <SetupScreen onStart={startGame} />;
+    }
+    // sessionMode is 'host' or 'join': collect a name/address, connect, then
+    // show the live lobby. Sprint C turns "game started" into a real GameState;
+    // for now the lobby is a dead end once the host clicks Start.
+    if (!networkClient || !networkPlayerId) {
+      return (
+        <NetworkSetup
+          role={sessionMode}
+          onConnected={(client, playerId, isHost) => {
+            setNetworkClient(client);
+            setNetworkPlayerId(playerId);
+            setNetworkIsHost(isHost);
+          }}
+          onBack={resetNetworkState}
+        />
+      );
+    }
+    return (
+      <NetworkLobby
+        client={networkClient}
+        playerId={networkPlayerId}
+        isHost={networkIsHost}
+        onGameStarted={() => {
+          const transport = new NetworkTransport(networkClient, networkPlayerId);
+          networkTransportRef.current = transport;
+
+          const unsubscribeIdentity = networkClient.onMessage((message) => {
+            if (message.type === 'YOUR_GAME_PLAYER_ID') {
+              setGamePlayerId(message.playerId);
+              // This device is that player, for the whole session — no PIN
+              // needed, unlike local mode's shared-screen handoff.
+              setUnlockedPlayerId(message.playerId);
+            }
+          });
+          const unsubscribeState = transport.subscribe(
+            (state) => {
+              setError(null);
+              commit(state);
+            },
+            (message) => setError(message)
+          );
+          const unsubscribeOpen = networkClient.onOpen(() => setNetworkConnectionLost(false));
+          const unsubscribeClose = networkClient.onClose(() => setNetworkConnectionLost(true));
+          networkUnsubscribeRef.current = () => {
+            unsubscribeIdentity();
+            unsubscribeState();
+            unsubscribeOpen();
+            unsubscribeClose();
+          };
+        }}
+        onLeave={resetNetworkState}
+      />
+    );
   }
 
   const currentPlayer = game.players.find((p) => p.id === game.currentPlayerId)!;
+  // Local mode has no fixed "viewer" — the shared screen always belongs to
+  // whoever's turn it is. Network mode's viewer is this device's own player,
+  // regardless of whose turn it is, since every device sees the live board.
+  const viewerPlayerId = sessionMode === 'local' ? undefined : (gamePlayerId ?? undefined);
+  const viewerPlayer = viewerPlayerId
+    ? (game.players.find((p) => p.id === viewerPlayerId) ?? currentPlayer)
+    : currentPlayer;
   // Only the action panels relevant to a normal action phase are shown — every
   // special phase (discard, robber, stealing, road building, setup) replaces them
   // with its own focused instruction instead of leaving irrelevant buttons visible.
   const showOrdinaryActions = game.phase === 'PLAYING' && game.turnPhase === 'AWAITING_ACTIONS';
+  // Local mode restricts viewing to your own turn (the shared-screen PIN model);
+  // network mode's own hand is visible on this device for the whole session,
+  // whoever's turn it is — see NetworkLobby's onGameStarted.
   const unlockedPlayer =
-    unlockedPlayerId && unlockedPlayerId === game.currentPlayerId
+    unlockedPlayerId && (sessionMode !== 'local' || unlockedPlayerId === game.currentPlayerId)
       ? game.players.find((p) => p.id === unlockedPlayerId)
       : undefined;
 
@@ -521,6 +671,12 @@ function App() {
         onNewGame={() => setConfirmNewGameOpen(true)}
       />
 
+      {sessionMode !== 'local' && networkConnectionLost && (
+        <div className="network-status-banner" role="status">
+          Reconnecting to host…
+        </div>
+      )}
+
       <div className="main-row">
         <aside className="sidebar sidebar--left">
           <div
@@ -530,7 +686,7 @@ function App() {
             <TurnPanel game={game} rolling={rolling} error={error} onRoll={handleRoll} />
 
             {game.phase === 'PLAYING' && (
-              <YourResources resources={currentPlayer.resources} />
+              <YourResources resources={viewerPlayer.resources} />
             )}
 
             {showOrdinaryActions && (
@@ -553,7 +709,12 @@ function App() {
             )}
 
             {game.phase === 'PLAYING' && (
-              <DevCardsSummary game={game} onBuy={handleBuyCard} onView={handleOpenPin} />
+              <DevCardsSummary
+                game={game}
+                onBuy={handleBuyCard}
+                onView={handleOpenPin}
+                viewerPlayerId={viewerPlayerId}
+              />
             )}
 
             {cardDrawFlash && <CardDrawToast />}
@@ -591,7 +752,7 @@ function App() {
             onReject={handleRejectTrade}
             onCancel={handleCancelTrade}
           />
-          <PlayerPanels game={game} />
+          <PlayerPanels game={game} viewerPlayerId={viewerPlayerId} />
           <EventLog game={game} />
         </aside>
       </div>
