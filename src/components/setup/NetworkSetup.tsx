@@ -38,7 +38,10 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
       setError('Enter your name first.');
       return;
     }
-    const url = role === 'host' ? `ws://${window.location.host}` : resolveHostUrl(address);
+    // https-served pages (Render, any TLS host) can only open wss:// sockets —
+    // a plain ws:// attempt is blocked as mixed content and fails instantly.
+    const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const url = role === 'host' ? `${scheme}://${window.location.host}` : resolveHostUrl(address);
     if (role === 'join' && !address.trim()) {
       setError("Enter the host's address.");
       return;

@@ -94,12 +94,20 @@ export class GameClient {
   }
 }
 
-/** Builds a ws:// URL from whatever a player types in — bare IP, IP:port, or a full URL. */
+/**
+ * Builds a ws(s):// URL from whatever a player types in — bare IP, IP:port, or
+ * a full URL. Defaults to matching the current page's own protocol: a page
+ * loaded over https (Render, or any TLS-terminating host) can only ever open
+ * wss:// connections — a plain ws:// attempt is blocked outright as mixed
+ * content and fails instantly, which is exactly what "could not reach that
+ * address" turned out to be when hosting/joining on Render.
+ */
 export function resolveHostUrl(input: string): string {
   const trimmed = input.trim();
   if (trimmed.startsWith('ws://') || trimmed.startsWith('wss://')) return trimmed;
   const withoutScheme = trimmed.replace(/^https?:\/\//, '');
-  return `ws://${withoutScheme}`;
+  const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${scheme}://${withoutScheme}`;
 }
 
 const STORAGE_PREFIX = 'catan-network-session:';
