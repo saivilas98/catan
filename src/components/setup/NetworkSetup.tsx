@@ -22,16 +22,26 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
   const [error, setError] = useState<string | null>(null);
   const [lanAddresses, setLanAddresses] = useState<string[] | null>(null);
 
+  const loadedViaLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
   useEffect(() => {
-    if (role !== 'host') return;
-    // The host may have loaded this page via localhost, which nobody else on
-    // the network can reach — ask the server what address actually resolves
-    // to it on the LAN, rather than relying on the terminal output alone.
+    if (role !== 'host' || !loadedViaLocalhost) return;
+    // Only relevant for local LAN hosting: the host loaded the page via
+    // localhost, which nobody else on the network can reach, so ask the
+    // server what address actually resolves to it on the LAN instead. Any
+    // other host (a real LAN IP, or a public domain like a Render deploy) is
+    // already a shareable address on its own — see shareableAddress below.
     fetch('/info')
       .then((res) => res.json())
       .then((info: { port: number; addresses: string[] }) => setLanAddresses(info.addresses))
       .catch(() => setLanAddresses([]));
-  }, [role]);
+  }, [role, loadedViaLocalhost]);
+
+  // What to tell other players to open. A page already loaded from a real,
+  // shareable address (a LAN IP typed directly, or a public URL like Render)
+  // needs no help — window.location.origin IS the address to share. Only
+  // localhost needs the /info lookup above to find a real LAN address.
+  const shareableAddress = loadedViaLocalhost ? null : window.location.origin;
 
   const handleConnect = () => {
     const trimmedName = name.trim();
@@ -112,7 +122,11 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
 
         {role === 'host' && (
           <p className="setup-pin-hint">
-            {lanAddresses && lanAddresses.length > 0 ? (
+            {shareableAddress ? (
+              <>
+                Other players should open: <code>{shareableAddress}</code>
+              </>
+            ) : lanAddresses && lanAddresses.length > 0 ? (
               <>
                 Other players on this Wi-Fi should open:{' '}
                 {lanAddresses.map((address, i) => (
