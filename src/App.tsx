@@ -407,10 +407,16 @@ function App() {
   // --- Privacy: PIN entry and the private card view ---
 
   const handleOpenPin = () => {
-    // Network mode: this device already only ever received its own player's
-    // real cards (see redactState.ts) and unlockedPlayerId is set for the whole
-    // session in NetworkLobby's onGameStarted — there is nothing to unlock.
-    if (sessionMode !== 'local') return;
+    // Network mode has no PIN — this device already only ever received its
+    // own player's real cards (see redactState.ts). But several existing
+    // local-mode code paths call closePrivateCards() unconditionally (playing
+    // a card, clicking the backdrop, ...), which also clears unlockedPlayerId
+    // in network mode. Re-opening here just means showing this device's own
+    // hand again, not actually unlocking anything new.
+    if (sessionMode !== 'local') {
+      if (gamePlayerId) setUnlockedPlayerId(gamePlayerId);
+      return;
+    }
     setPinError(null);
     setPinModalOpen(true);
   };
