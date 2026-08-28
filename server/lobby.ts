@@ -29,6 +29,9 @@ export class Lobby {
   private nextId = 1;
   private started = false;
 
+  /** The short code other players type in to join this specific room. */
+  constructor(readonly code: string) {}
+
   join(socket: WebSocket, name: string, reconnectToken?: string): JoinResult {
     if (reconnectToken) {
       const existing = this.players.find((p) => p.reconnectToken === reconnectToken);
@@ -40,6 +43,7 @@ export class Lobby {
           playerId: existing.id,
           isHost,
           reconnectToken: existing.reconnectToken,
+          roomCode: this.code,
         });
         this.broadcast({ type: 'PLAYER_RECONNECTED', playerId: existing.id });
         this.broadcastLobbyState();
@@ -62,9 +66,19 @@ export class Lobby {
       reconnectToken: randomUUID(),
     };
     this.players.push(player);
-    send(socket, { type: 'JOINED', playerId: player.id, isHost, reconnectToken: player.reconnectToken });
+    send(socket, {
+      type: 'JOINED',
+      playerId: player.id,
+      isHost,
+      reconnectToken: player.reconnectToken,
+      roomCode: this.code,
+    });
     this.broadcastLobbyState();
     return { ok: true, player, rejoined: false };
+  }
+
+  isEmpty(): boolean {
+    return this.players.length === 0;
   }
 
   setReady(playerId: string, ready: boolean) {

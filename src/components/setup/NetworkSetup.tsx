@@ -5,19 +5,22 @@ import { FullscreenButton } from '../layout/FullscreenButton';
 
 interface NetworkSetupProps {
   role: Extract<SessionMode, 'host' | 'join'>;
-  onConnected: (client: GameClient, playerId: string, isHost: boolean) => void;
+  onConnected: (client: GameClient, playerId: string, isHost: boolean, roomCode: string) => void;
   onBack: () => void;
 }
 
 /**
- * Collects a display name (and, when joining, the host's address), opens the
- * WebSocket, and hands off to the lobby once the server confirms JOINED.
- * The host's own browser connects to itself at window.location.host — it must
- * already be loaded from the host server (i.e. `npm run host` is running).
+ * Collects a display name — plus, when joining, the room code the host was
+ * given (and, only when testing locally, a host address to override the
+ * default) — opens the WebSocket, and hands off to the lobby once the server
+ * confirms JOINED. The host's own browser connects to itself at
+ * window.location.host — it must already be loaded from the host server
+ * (i.e. `npm run host` is running, or this is a deployed instance).
  */
 export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [roomCode, setRoomCode] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [slowConnect, setSlowConnect] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,14 +53,24 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
       setError('Enter your name first.');
       return;
     }
-    // https-served pages (Render, any TLS host) can only open wss:// sockets —
-    // a plain ws:// attempt is blocked as mixed content and fails instantly.
-    const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const url = role === 'host' ? `${scheme}://${window.location.host}` : resolveHostUrl(address);
-    if (role === 'join' && !address.trim()) {
+    const trimmedRoomCode = roomCode.trim().toUpperCase();
+    if (role === 'join' && !trimmedRoomCode) {
+      setError("Enter the host's room code.");
+      return;
+    }
+    // Joining from the same page the host is running on (the common case —
+    // a shared public deployment, or a LAN host's own URL loaded directly)
+    // needs no address at all; only offer it as an override for local testing,
+    // where "this page" and "the host to connect to" can legitimately differ.
+    if (role === 'join' && loadedViaLocalhost && !address.trim()) {
       setError("Enter the host's address.");
       return;
     }
+    // https-served pages (Render, any TLS host) can only open wss:// sockets —
+    // a plain ws:// attempt is blocked as mixed content and fails instantly.
+    const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const sameOriginUrl = `${scheme}://${window.location.host}`;
+    const url = role === 'host' ? sameOriginUrl : loadedViaLocalhost ? resolveHostUrl(address) : sameOriginUrl;
 
     setError(null);
     setConnecting(true);
@@ -96,7 +109,7 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
           settled = true;
           cleanup();
           saveSession(url, { reconnectToken: message.reconnectToken, name: trimmedName });
-          onConnected(client, message.playerId, message.isHost);
+          onConnected(client, message.playerId, message.isHost, message.roomCode);
         } else if (message.type === 'ERROR') {
           settled = true;
           cleanup();
@@ -108,7 +121,12 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
     );
     cleanups.push(
       client.onOpen(() =>
-        client.send({ type: 'JOIN', name: trimmedName, reconnectToken: savedSession?.reconnectToken })
+        client.send({
+          type: 'JOIN',
+          name: trimmedName,
+          reconnectToken: savedSession?.reconnectToken,
+          roomCode: role === 'join' ? trimmedRoomCode : undefined,
+        })
       )
     );
     // Deliberately no handling on error/close here — see the comment above.
@@ -126,7 +144,8 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
           <p className="setup-pin-hint">
             {shareableAddress ? (
               <>
-                Other players should open: <code>{shareableAddress}</code>
+                Other players should open <code>{shareableAddress}</code> and enter the room code
+                you'll get on the next screen.
               </>
             ) : lanAddresses && lanAddresses.length > 0 ? (
               <>
@@ -137,11 +156,12 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
                     <code>http://{address}:{window.location.port || 80}</code>
                   </span>
                 ))}
+                , then enter the room code you'll get on the next screen.
               </>
             ) : (
               <>
                 Make sure <code>npm run host</code> is running, then connect below. Other players
-                will type this computer&apos;s network address, printed in that terminal.
+                will type this computer&apos;s network address and the room code you'll get next.
               </>
             )}
           </p>
@@ -159,6 +179,21 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
         </label>
 
         {role === 'join' && (
+          <label className="setup-player-label">
+            Room Code
+            <input
+              type="text"
+              value={roomCode}
+              placeholder="e.g. K7QP"
+              maxLength={8}
+              autoCapitalize="characters"
+              style={{ textTransform: 'uppercase', letterSpacing: '0.15em' }}
+              onChange={(e) => setRoomCode(e.target.value)}
+            />
+          </label>
+        )}
+
+        {role === 'join' && loadedViaLocalhost && (
           <label className="setup-player-label">
             Host Address
             <input

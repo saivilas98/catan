@@ -269,6 +269,40 @@
   color: var(--ink-soft);
 }
 
+.network-room-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: var(--well);
+  border: 1px dashed var(--line-strong);
+}
+
+.network-room-code__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.network-room-code__value {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--gold-pale);
+  padding-left: 0.3em; /* re-center around the letter-spacing */
+}
+
+.network-room-code__hint {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
 .network-lobby-list {
   list-style: none;
   margin: 1rem 0;

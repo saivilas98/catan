@@ -13,6 +13,8 @@ interface NetworkLobbyProps {
   client: GameClient;
   playerId: string;
   isHost: boolean;
+  /** The code other players type in to join this room (see NetworkSetup). */
+  roomCode: string | null;
   onGameStarted: () => void;
   onLeave: () => void;
 }
@@ -22,7 +24,7 @@ interface NetworkLobbyProps {
  * Sprint C wires onGameStarted into a real GameState; for now it's just the
  * signal that the server accepted the host's START_GAME.
  */
-export function NetworkLobby({ client, playerId, isHost, onGameStarted, onLeave }: NetworkLobbyProps) {
+export function NetworkLobby({ client, playerId, isHost, roomCode, onGameStarted, onLeave }: NetworkLobbyProps) {
   const [players, setPlayers] = useState<LobbyPlayerView[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +71,14 @@ export function NetworkLobby({ client, playerId, isHost, onGameStarted, onLeave 
         <p className="setup-tagline">
           {isHost ? 'Start once everyone has joined.' : "Waiting for the host to start…"}
         </p>
+
+        {isHost && roomCode && (
+          <div className="network-room-code">
+            <span className="network-room-code__label">Room Code</span>
+            <span className="network-room-code__value">{roomCode}</span>
+            <span className="network-room-code__hint">Share this with the other players</span>
+          </div>
+        )}
 
         <ul className="network-lobby-list">
           {players.map((player) => (

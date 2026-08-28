@@ -10,14 +10,18 @@ export type ClientMessage =
   // reconnectToken: if this matches a player already known to the host (from
   // an earlier JOINED in this same session), the host reuses that seat instead
   // of creating a new one — see server/lobby.ts.
-  | { type: 'JOIN'; name: string; reconnectToken?: string }
+  // roomCode: omitted to create a brand-new room (the creator becomes its
+  // host); provided to join an existing room by the code its host was given.
+  // One server process can now referee many concurrent rooms — see
+  // server/index.ts's `rooms` map.
+  | { type: 'JOIN'; name: string; reconnectToken?: string; roomCode?: string }
   | { type: 'READY'; ready: boolean }
   | { type: 'START_GAME' }
   | { type: 'ACTION'; requestId: string; action: GameAction }
   | { type: 'LEAVE' };
 
 export type ServerMessage =
-  | { type: 'JOINED'; playerId: string; isHost: boolean; reconnectToken: string }
+  | { type: 'JOINED'; playerId: string; isHost: boolean; reconnectToken: string; roomCode: string }
   | { type: 'LOBBY_STATE'; players: { playerId: string; name: string; ready: boolean }[] }
   | { type: 'GAME_STARTED' }
   // The lobby's playerId (from JOINED) and the GameState's player ids are two

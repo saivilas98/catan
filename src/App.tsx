@@ -102,6 +102,9 @@ function App() {
   // True while the socket is dropped and GameClient is auto-reconnecting.
   const [networkConnectionLost, setNetworkConnectionLost] = useState(false);
   const [networkIsHost, setNetworkIsHost] = useState(false);
+  // The short code this room's other players type in to join it — shown to
+  // the host in the waiting room (see NetworkLobby).
+  const [networkRoomCode, setNetworkRoomCode] = useState<string | null>(null);
 
   const networkUnsubscribeRef = useRef<(() => void) | null>(null);
 
@@ -115,6 +118,7 @@ function App() {
     setNetworkPlayerId(null);
     setGamePlayerId(null);
     setNetworkIsHost(false);
+    setNetworkRoomCode(null);
     setNetworkConnectionLost(false);
     setSessionMode(null);
     gameRef.current = null;
@@ -618,10 +622,11 @@ function App() {
       return (
         <NetworkSetup
           role={sessionMode}
-          onConnected={(client, playerId, isHost) => {
+          onConnected={(client, playerId, isHost, roomCode) => {
             setNetworkClient(client);
             setNetworkPlayerId(playerId);
             setNetworkIsHost(isHost);
+            setNetworkRoomCode(roomCode);
           }}
           onBack={resetNetworkState}
         />
@@ -632,6 +637,7 @@ function App() {
         client={networkClient}
         playerId={networkPlayerId}
         isHost={networkIsHost}
+        roomCode={networkRoomCode}
         onGameStarted={() => {
           const transport = new NetworkTransport(networkClient, networkPlayerId);
           networkTransportRef.current = transport;
