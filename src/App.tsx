@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
 import type {
   BuildingType,
   DevelopmentCardType,
@@ -23,7 +22,6 @@ import {
   getValidSettlementLocations,
 } from './game/rules/placement';
 import { fixedDiceRng } from './game/utils/fixedRng';
-import { PLAYER_COLOR_HEX } from './data/terrainTheme';
 import { SetupScreen } from './components/setup/SetupScreen';
 import { ModeSelect } from './components/setup/ModeSelect';
 import type { SessionMode } from './components/setup/ModeSelect';
@@ -34,10 +32,7 @@ import { NetworkTransport } from './net/networkTransport';
 import { HexBoard } from './components/board/HexBoard';
 import type { PlacementMode } from './components/board/HexBoard';
 import { PlayerPanels } from './components/players/PlayerPanels';
-import { YourResources } from './components/players/YourResources';
-import { TurnPanel } from './components/dice/TurnPanel';
 import { DiceRollOverlay } from './components/dice/DiceRollOverlay';
-import { EndTurnBar } from './components/dice/EndTurnBar';
 import { BuildPanel } from './components/build/BuildPanel';
 import { TradeModal } from './components/trade/TradeModal';
 import { TradeInbox } from './components/trade/TradeInbox';
@@ -55,11 +50,16 @@ import { GameOverScreen } from './components/scoring/GameOverScreen';
 import { BonusIndicators } from './components/scoring/BonusIndicators';
 import { getValidRobberHexes } from './game/rules/robber';
 import { EventLog } from './components/log/EventLog';
-import { TopBar } from './components/topbar/TopBar';
 import { HandoffOverlay } from './components/topbar/HandoffOverlay';
 import { ConfirmNewGameModal } from './components/topbar/ConfirmNewGameModal';
 import { DevPanel } from './components/dev/DevPanel';
+import { TopBarLite } from './components/layout/TopBarLite';
+import { BottomDock } from './components/layout/BottomDock';
+import { Popover } from './components/layout/Popover';
 import './App.css';
+
+/** Which popup, if any, is currently open — only one at a time. */
+type ActivePopup = 'players' | 'build' | 'trade' | 'cards' | 'log' | null;
 
 /** How long the dice visually tumble before revealing the engine's result. */
 const ROLL_ANIMATION_MS = 600;
@@ -81,6 +81,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<PlacementMode>('none');
   const [tradeOpen, setTradeOpen] = useState(false);
+  const [activePopup, setActivePopup] = useState<ActivePopup>(null);
   // Which development card is mid-play and waiting on the player's choice.
   const [cardPrompt, setCardPrompt] = useState<'monopoly' | 'yearOfPlenty' | null>(null);
 
@@ -259,6 +260,7 @@ function App() {
     setError(null);
     setMode('none');
     setTradeOpen(false);
+    setActivePopup(null);
     closePrivateCards();
     setHandoffPlayerId(null);
     setCardDrawFlash(false);
@@ -283,6 +285,7 @@ function App() {
     setMode('none');
     setSessionMode(null);
     setTradeOpen(false);
+    setActivePopup(null);
     setPins({});
     closePrivateCards();
     setHandoffPlayerId(null);
@@ -307,6 +310,7 @@ function App() {
     if (!current) return;
     setMode('none');
     setTradeOpen(false);
+    setActivePopup(null);
     // Local mode only: network mode's own hand stays visible on this device for
     // the whole session (see NetworkLobby's onGameStarted), there is no shared
     // screen to hand off, and dispatch() there is fire-and-forget, so
@@ -681,12 +685,17 @@ function App() {
       ? game.players.find((p) => p.id === unlockedPlayerId)
       : undefined;
 
+  const pendingTradeCount = game.tradeOffers.filter((t) => t.status === 'PENDING').length;
+  const viewerDevCardCount =
+    (viewerPlayer as typeof viewerPlayer & { developmentCardCount?: number })
+      .developmentCardCount ?? viewerPlayer.developmentCards.length;
+
   return (
-    <div className="app-shell">
-      <TopBar
-        turnNumber={game.turnNumber}
-        currentPlayer={currentPlayer}
-        onNewGame={() => setConfirmNewGameOpen(true)}
+    <div className="app-shell app-shell--lite">
+      <TopBarLite
+        game={game}
+        onOpenPlayers={() => setActivePopup('players')}
+        onOpenMenu={() => setConfirmNewGameOpen(true)}
       />
 
       {sessionMode !== 'local' && networkConnectionLost && (
@@ -695,89 +704,108 @@ function App() {
         </div>
       )}
 
-      <div className="player-rail">
-        <PlayerPanels game={game} viewerPlayerId={viewerPlayerId} compact />
-      </div>
+      {error && <p className="board-error-banner">{error}</p>}
+      {cardDrawFlash && (
+        <div className="card-draw-toast-anchor">
+          <CardDrawToast />
+        </div>
+      )}
 
-      <div className="main-row">
-        <aside className="sidebar sidebar--left">
-          <div
-            className="player-console"
-            style={{ '--player-color': PLAYER_COLOR_HEX[currentPlayer.color] } as CSSProperties}
-          >
-            <TurnPanel game={game} rolling={rolling} error={error} onRoll={handleRoll} />
+      <main className="board-stage board-stage--full">
+        <HexBoard
+          board={game.board}
+          robberHexId={game.robberHexId}
+          playerColors={playerColors}
+          mode={effectiveMode}
+          validIntersectionIds={validIntersectionIds}
+          validEdgeIds={validEdgeIds}
+          validHexIds={validHexIds}
+          pulseTotal={pulseTotal}
+          celebrateWinnerId={victoryBoardBeat ? game.winnerId : null}
+          onSelectIntersection={handleSelectIntersection}
+          onSelectEdge={handleSelectEdge}
+          onSelectHex={handleSelectHex}
+        />
+        <DiceRollOverlay visible={diceOverlayVisible} rolling={rolling} dice={game.diceResult} />
+      </main>
 
-            {game.phase === 'PLAYING' && (
-              <YourResources resources={viewerPlayer.resources} />
-            )}
+      {game.phase === 'PLAYING' && (
+        <BottomDock
+          game={game}
+          resources={viewerPlayer.resources}
+          rolling={rolling}
+          showOrdinaryActions={showOrdinaryActions}
+          pendingTradeCount={pendingTradeCount}
+          devCardCount={viewerDevCardCount}
+          onRoll={handleRoll}
+          onEndTurn={handleEndTurn}
+          onOpenBuild={() => setActivePopup('build')}
+          onOpenTrade={() => setActivePopup('trade')}
+          onOpenCards={() => setActivePopup('cards')}
+          onOpenLog={() => setActivePopup('log')}
+        />
+      )}
 
-            {showOrdinaryActions && (
-              <BuildPanel
-                game={game}
-                mode={mode}
-                validCount={validIntersectionIds.length + validEdgeIds.length}
-                onSelectMode={setMode}
-              />
-            )}
+      {activePopup === 'players' && (
+        <Popover title="Players" onClose={() => setActivePopup(null)}>
+          <PlayerPanels game={game} viewerPlayerId={viewerPlayerId} />
+        </Popover>
+      )}
 
-            {showOrdinaryActions && (
-              <button
-                type="button"
-                className="btn btn--primary trade-open-btn"
-                onClick={() => setTradeOpen(true)}
-              >
-                Trade
-              </button>
-            )}
-
-            {game.phase === 'PLAYING' && (
-              <DevCardsSummary
-                game={game}
-                onBuy={handleBuyCard}
-                onView={handleOpenPin}
-                viewerPlayerId={viewerPlayerId}
-              />
-            )}
-
-            {cardDrawFlash && <CardDrawToast />}
-          </div>
-
-          {game.phase === 'PLAYING' && (
-            <EndTurnBar game={game} rolling={rolling} onEndTurn={handleEndTurn} />
-          )}
-        </aside>
-
-        <main className="board-stage">
-          <HexBoard
-            board={game.board}
-            robberHexId={game.robberHexId}
-            playerColors={playerColors}
-            mode={effectiveMode}
-            validIntersectionIds={validIntersectionIds}
-            validEdgeIds={validEdgeIds}
-            validHexIds={validHexIds}
-            pulseTotal={pulseTotal}
-            celebrateWinnerId={victoryBoardBeat ? game.winnerId : null}
-            onSelectIntersection={handleSelectIntersection}
-            onSelectEdge={handleSelectEdge}
-            onSelectHex={handleSelectHex}
+      {activePopup === 'build' && (
+        <Popover title="Build" onClose={() => setActivePopup(null)}>
+          <BuildPanel
+            game={game}
+            mode={mode}
+            validCount={validIntersectionIds.length + validEdgeIds.length}
+            onSelectMode={(next) => {
+              setMode(next);
+              if (next !== 'none') setActivePopup(null);
+            }}
           />
-          <DiceRollOverlay visible={diceOverlayVisible} rolling={rolling} dice={game.diceResult} />
-        </main>
+        </Popover>
+      )}
 
-        <aside className="sidebar sidebar--right">
-          <BonusIndicators game={game} />
-          {/* Above the player cards, not buried under the log — a new trade
-              request is time-sensitive and easy to miss lower down. */}
+      {activePopup === 'trade' && (
+        <Popover title="Trade" onClose={() => setActivePopup(null)}>
           <TradeInbox
             game={game}
             onAccept={handleAcceptTrade}
             onReject={handleRejectTrade}
             onCancel={handleCancelTrade}
           />
+          {showOrdinaryActions && (
+            <button
+              type="button"
+              className="btn btn--primary trade-open-btn"
+              onClick={() => {
+                setActivePopup(null);
+                setTradeOpen(true);
+              }}
+            >
+              Propose a Trade
+            </button>
+          )}
+        </Popover>
+      )}
+
+      {activePopup === 'cards' && (
+        <Popover title="Development" onClose={() => setActivePopup(null)}>
+          <DevCardsSummary
+            game={game}
+            onBuy={handleBuyCard}
+            onView={handleOpenPin}
+            viewerPlayerId={viewerPlayerId}
+          />
+        </Popover>
+      )}
+
+      {activePopup === 'log' && (
+        <Popover title="Log" onClose={() => setActivePopup(null)}>
+          <BonusIndicators game={game} />
           <EventLog game={game} />
-        </aside>
-      </div>
+        </Popover>
+      )}
 
       {game.phase === 'GAME_OVER' && !victoryBoardBeat && !gameOverDismissed && (
         <GameOverScreen

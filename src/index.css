@@ -4,32 +4,32 @@
  * light→dark toward the bottom-right, every shadow falls down-right.
  */
 :root {
-  /* Environment */
-  --table: #171008;
-  --table-deep: #0d0905;
+  /* Environment — a clean, paper-white table instead of the old dark walnut. */
+  --table: #f6f3ec;
+  --table-deep: #ece6d6;
 
-  /* UI surfaces (leather/wood trays) */
-  --surface-1: #241c14;
-  --surface-2: #1b150f;
-  --surface-raised: #2e2418;
-  --well: #17110c;
-  --line: #3d3022;
-  --line-strong: #4a3a28;
+  /* UI surfaces */
+  --surface-1: #ffffff;
+  --surface-2: #fbf9f4;
+  --surface-raised: #ffffff;
+  --well: #f1ece0;
+  --line: #e6e0d2;
+  --line-strong: #d8cfb9;
 
   /* Ink */
-  --ink: #f1ead9;
-  --ink-mild: #d8cbb2;
-  --ink-soft: #c9baa0;
-  --ink-faint: #8d7f68;
+  --ink: #2b2a26;
+  --ink-mild: #5c564a;
+  --ink-soft: #756e5e;
+  --ink-faint: #a39a84;
 
   /* Accents */
-  --gold: #c98a3f;
-  --gold-bright: #e0a95c;
-  --gold-pale: #eecf8e;
-  --parchment: #efe3c3;
-  --parchment-shade: #d9c69a;
+  --gold: #b3622f;
+  --gold-bright: #c97a3f;
+  --gold-pale: #8a5321;
+  --parchment: #fffdf8;
+  --parchment-shade: #efe6d0;
   --danger: #b5533c;
-  --success: #6f8f4f;
+  --success: #5c7a42;
 
   /*
    * Typography: one clean, highly readable family. Headings differentiate by
@@ -57,7 +57,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
+  color-scheme: light;
   color: var(--ink);
   background-color: var(--table);
 
@@ -75,21 +75,17 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /*
-   * Dark walnut tabletop: warm pools of candle-light falling off into shadow
-   * at the edges, with a whisper of diagonal wood grain.
-   */
+  /* A clean, paper-white table with the faintest warm vignette — quiet enough
+     that the board itself stays the thing your eye lands on. */
   background:
     repeating-linear-gradient(
       104deg,
-      rgba(255, 226, 178, 0.014) 0px,
-      rgba(255, 226, 178, 0.014) 2px,
+      rgba(120, 100, 60, 0.012) 0px,
+      rgba(120, 100, 60, 0.012) 2px,
       transparent 2px,
       transparent 9px
     ),
-    radial-gradient(ellipse 120% 90% at 38% 20%, #2a2014 0%, transparent 60%),
-    radial-gradient(ellipse 110% 90% at 85% 90%, #221708 0%, transparent 55%),
-    radial-gradient(ellipse 140% 120% at 50% 45%, var(--table) 30%, var(--table-deep) 100%);
+    radial-gradient(ellipse 140% 120% at 50% 40%, var(--table) 40%, var(--table-deep) 100%);
 }
 
 button {
