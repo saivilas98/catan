@@ -31,7 +31,7 @@ const HEX_SIZE = 62;
 // circle plus label sitting past each outer intersection); this is the
 // smallest padding that keeps them from clipping against the SVG's own
 // viewBox, which acts as a hard clip rect.
-const PADDING = HEX_SIZE * 2.05;
+const PADDING = HEX_SIZE * 1.85;
 /** Board geometry is generated at unit size; scale it up for rendering. */
 const SCALE = HEX_SIZE;
 
