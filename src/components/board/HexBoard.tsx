@@ -27,8 +27,10 @@ interface HexBoardProps {
 }
 
 const HEX_SIZE = 62;
-// Generous enough that the tallest piece art (cities, the robber) never pokes
-// past the wooden rim even when placed at the board's outermost corner tips.
+// Port badges are the widest thing hanging off the board's outer edge (a
+// circle plus label sitting past each outer intersection); this is the
+// smallest padding that keeps them from clipping against the SVG's own
+// viewBox, which acts as a hard clip rect.
 const PADDING = HEX_SIZE * 2.05;
 /** Board geometry is generated at unit size; scale it up for rendering. */
 const SCALE = HEX_SIZE;
