@@ -322,13 +322,24 @@
   margin-left: auto;
 }
 
-/* ---------- Main row: left sidebar | board | right sidebar ---------- */
+/* ---------- Player rail: perimeter strip above the board ---------- */
+
+.player-rail {
+  flex: 0 0 auto;
+  padding: 0.6rem 0.9rem 0;
+}
+
+/* ---------- Main row: left rail | board | right rail ---------- */
 
 .main-row {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(230px, 22%) 1fr minmax(230px, 23%);
+  /* Narrower, near-fixed side rails than before — the player rail above now
+     carries what used to live in the right sidebar, so the board (1fr)
+     claims the space that freed up instead of splitting it with a wide
+     percentage-based column. */
+  grid-template-columns: minmax(210px, 240px) 1fr minmax(210px, 230px);
   gap: 0.9rem;
   padding: 0.9rem;
 }
@@ -396,11 +407,56 @@
 }
 
 .board-stage {
+  position: relative;
   min-width: 0;
   min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ---------- Center-of-board dice roll overlay ---------- */
+
+.dice-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  pointer-events: none;
+  z-index: 5;
+  animation: dice-overlay-in 0.2s ease;
+}
+
+.dice-overlay__dice {
+  display: flex;
+  gap: 0.9rem;
+  transform: scale(1.9);
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.65));
+}
+
+.dice-overlay__total {
+  margin: 0.6rem 0 0;
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+  background: rgba(20, 12, 4, 0.72);
+  border: 1px solid var(--gold);
+  color: var(--gold-pale);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+@keyframes dice-overlay-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dice-overlay { animation: none; }
 }
 
 .hex-board {
@@ -426,10 +482,18 @@
 }
 
 @media (max-width: 1100px) {
+  .player-rail {
+    padding: 0.5rem 0.6rem 0;
+  }
+
   .main-row {
-    grid-template-columns: minmax(200px, 20%) 1fr minmax(200px, 21%);
+    grid-template-columns: minmax(190px, 210px) 1fr minmax(190px, 200px);
     gap: 0.6rem;
     padding: 0.6rem;
+  }
+
+  .player-panel--compact {
+    flex-basis: 160px;
   }
 
   .dev-buy-btn {
@@ -439,6 +503,13 @@
 }
 
 @media (max-width: 900px) {
+  .player-rail {
+    max-height: 16vh;
+    overflow-y: auto;
+    padding: 0.5rem 0.5rem 0;
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent 100%);
+  }
+
   .main-row {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(280px, 46vh) auto;
@@ -458,8 +529,12 @@
  * here can affect the existing laptop/desktop layout above.
  */
 @media (pointer: coarse) and (hover: none) and (min-width: 901px) {
+  .player-rail {
+    padding: 0.45rem 0.55rem 0;
+  }
+
   .main-row {
-    grid-template-columns: minmax(180px, 15%) 1fr minmax(180px, 16%);
+    grid-template-columns: minmax(170px, 190px) 1fr minmax(170px, 180px);
     gap: 0.55rem;
     padding: 0.55rem;
   }
@@ -475,6 +550,16 @@
 }
 
 @media (pointer: coarse) and (hover: none) and (max-width: 900px) {
+  /* Same reasoning as .sidebar--right below: cap it and scroll internally so
+     a full player rail (up to 6 cards) can never eat into the board's share
+     of a very tight screen. */
+  .player-rail {
+    max-height: 14vh;
+    overflow-y: auto;
+    padding: 0.4rem 0.5rem 0;
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent 100%);
+  }
+
   .main-row {
     grid-template-columns: 1fr;
     /*
@@ -839,6 +924,42 @@
   letter-spacing: 0.07em;
   color: var(--ink-faint);
   text-align: right;
+}
+
+/*
+ * ---------- Compact player panels: the perimeter rail above the board ----------
+ * Same component and the same data as the old right-sidebar cards — just a
+ * denser, horizontal-wrapping layout so it reads as a rail, not a stacked
+ * list, and scales to 6 seats without dominating the screen.
+ */
+.player-panels--compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.player-panel--compact {
+  flex: 1 1 190px;
+  max-width: 280px;
+  padding: 0.55rem 0.75rem 0.5rem;
+  gap: 0.35rem;
+}
+
+.player-panel--compact .player-panel__status {
+  /* The gold border/lift on .player-panel--current already marks whose turn
+     it is — no need to also spend a text line on it here. */
+  display: none;
+}
+
+.player-panel--compact .player-panel__name {
+  font-size: 0.82rem;
+}
+
+.player-panel--compact .player-panel__footer,
+.player-panel--compact .player-panel__dev,
+.player-panel--compact .player-panel__ports {
+  padding-top: 0.3rem;
+  gap: 0.35rem;
 }
 
 /* ---------- Event log ---------- */

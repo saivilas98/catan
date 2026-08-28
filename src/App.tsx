@@ -36,6 +36,7 @@ import type { PlacementMode } from './components/board/HexBoard';
 import { PlayerPanels } from './components/players/PlayerPanels';
 import { YourResources } from './components/players/YourResources';
 import { TurnPanel } from './components/dice/TurnPanel';
+import { DiceRollOverlay } from './components/dice/DiceRollOverlay';
 import { EndTurnBar } from './components/dice/EndTurnBar';
 import { BuildPanel } from './components/build/BuildPanel';
 import { TradeModal } from './components/trade/TradeModal';
@@ -68,6 +69,8 @@ const PULSE_DURATION_MS = 900;
 const VICTORY_BOARD_BEAT_MS = 900;
 /** How long the "card drawn" acknowledgement stays up. Identity is never shown. */
 const CARD_DRAW_TOAST_MS = 1400;
+/** How long the center-of-board roll result stays up after landing, so every player has time to see it. */
+const DICE_OVERLAY_HOLD_MS = 2200;
 
 /** DEV tools only exist behind an explicit, non-default query flag — never for players. */
 const DEV_MODE = new URLSearchParams(window.location.search).get('dev') === '1';
@@ -140,6 +143,10 @@ function App() {
   const pulseTimer = useRef<number | null>(null);
   const victoryTimer = useRef<number | null>(null);
   const cardDrawTimer = useRef<number | null>(null);
+  const diceOverlayTimer = useRef<number | null>(null);
+  // Center-of-board roll display — everyone watching sees the same number,
+  // not just the player whose sidebar it used to live in.
+  const [diceOverlayVisible, setDiceOverlayVisible] = useState(false);
   // The engine must run exactly once per user action. A setState updater can be
   // invoked twice (StrictMode), which would double-consume the dice RNG, so we
   // read the live state from a ref and call the engine outside any updater.
@@ -185,6 +192,7 @@ function App() {
 
   const startRollAnimation = useCallback(() => {
     setRolling(true);
+    setDiceOverlayVisible(true);
     if (rollTimer.current) window.clearTimeout(rollTimer.current);
     rollTimer.current = window.setTimeout(() => {
       setRolling(false);
@@ -194,6 +202,8 @@ function App() {
       setPulseTotal(total);
       if (pulseTimer.current) window.clearTimeout(pulseTimer.current);
       pulseTimer.current = window.setTimeout(() => setPulseTotal(null), PULSE_DURATION_MS);
+      if (diceOverlayTimer.current) window.clearTimeout(diceOverlayTimer.current);
+      diceOverlayTimer.current = window.setTimeout(() => setDiceOverlayVisible(false), DICE_OVERLAY_HOLD_MS);
     }, ROLL_ANIMATION_MS);
   }, []);
 
@@ -253,6 +263,7 @@ function App() {
     setHandoffPlayerId(null);
     setCardDrawFlash(false);
     setPulseTotal(null);
+    setDiceOverlayVisible(false);
     setVictoryBoardBeat(false);
     setGameOverDismissed(false);
   };
@@ -277,6 +288,7 @@ function App() {
     setHandoffPlayerId(null);
     setCardDrawFlash(false);
     setPulseTotal(null);
+    setDiceOverlayVisible(false);
     setVictoryBoardBeat(false);
     setGameOverDismissed(false);
     setConfirmNewGameOpen(false);
@@ -683,6 +695,10 @@ function App() {
         </div>
       )}
 
+      <div className="player-rail">
+        <PlayerPanels game={game} viewerPlayerId={viewerPlayerId} compact />
+      </div>
+
       <div className="main-row">
         <aside className="sidebar sidebar--left">
           <div
@@ -746,6 +762,7 @@ function App() {
             onSelectEdge={handleSelectEdge}
             onSelectHex={handleSelectHex}
           />
+          <DiceRollOverlay visible={diceOverlayVisible} rolling={rolling} dice={game.diceResult} />
         </main>
 
         <aside className="sidebar sidebar--right">
@@ -758,7 +775,6 @@ function App() {
             onReject={handleRejectTrade}
             onCancel={handleCancelTrade}
           />
-          <PlayerPanels game={game} viewerPlayerId={viewerPlayerId} />
           <EventLog game={game} />
         </aside>
       </div>

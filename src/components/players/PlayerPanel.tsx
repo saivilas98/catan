@@ -27,6 +27,8 @@ interface PlayerPanelProps {
    * (rather than just a count) is safe to render here.
    */
   viewerPlayerId?: string;
+  /** Tighter horizontal card, for the perimeter rail above the board. */
+  compact?: boolean;
 }
 
 export function PlayerPanel({
@@ -38,6 +40,7 @@ export function PlayerPanel({
   hiddenVictoryPoints,
   longestRoadLength,
   viewerPlayerId,
+  compact,
 }: PlayerPanelProps) {
   const showPrivate = viewerPlayerId ? player.id === viewerPlayerId : isCurrent;
   const total = player.resourceCount ?? countResources(player.resources);
@@ -45,7 +48,9 @@ export function PlayerPanel({
   const knightsPlayed = player.playedDevelopmentCards.filter((c) => c.type === 'knight').length;
 
   return (
-    <div className={`player-panel${isCurrent ? ' player-panel--current' : ''}`}>
+    <div
+      className={`player-panel${isCurrent ? ' player-panel--current' : ''}${compact ? ' player-panel--compact' : ''}`}
+    >
       <div className="player-panel__top">
         <span
           className="player-panel__swatch"

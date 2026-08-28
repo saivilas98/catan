@@ -9,13 +9,17 @@ interface PlayerPanelsProps {
   className?: string;
   /** See PlayerPanel's `viewerPlayerId` — omitted in local mode. */
   viewerPlayerId?: string;
+  /** Tighter horizontal card, for the perimeter rail above the board. */
+  compact?: boolean;
 }
 
-export function PlayerPanels({ game, className, viewerPlayerId }: PlayerPanelsProps) {
+export function PlayerPanels({ game, className, viewerPlayerId, compact }: PlayerPanelsProps) {
   const gameOver = game.phase === 'GAME_OVER';
 
   return (
-    <div className={`player-panels${className ? ` ${className}` : ''}`}>
+    <div
+      className={`player-panels${compact ? ' player-panels--compact' : ''}${className ? ` ${className}` : ''}`}
+    >
       {game.players.map((player) => {
         const isCurrent = player.id === game.currentPlayerId;
         const isViewer = viewerPlayerId ? player.id === viewerPlayerId : isCurrent;
@@ -33,6 +37,7 @@ export function PlayerPanels({ game, className, viewerPlayerId }: PlayerPanelsPr
             player={player}
             isCurrent={isCurrent}
             viewerPlayerId={viewerPlayerId}
+            compact={compact}
             ports={getPlayerPorts(game, player.id)}
             hasLargestArmy={game.largestArmyPlayerId === player.id}
             hasLongestRoad={game.longestRoadPlayerId === player.id}
