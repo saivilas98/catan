@@ -99,3 +99,79 @@ describe('generateBoard', () => {
     expect(result.valid).toBe(true);
   });
 });
+
+describe('generateBoard (5-6 player extended board)', () => {
+  it('contains 30 hexes for 5 players', () => {
+    const board = generateBoard(1, 5);
+    expect(board.hexes).toHaveLength(30);
+  });
+
+  it('contains 30 hexes for 6 players', () => {
+    const board = generateBoard(1, 6);
+    expect(board.hexes).toHaveLength(30);
+  });
+
+  it('has the correct terrain distribution', () => {
+    const board = generateBoard(1, 6);
+    const counts: Record<string, number> = {};
+    for (const hex of board.hexes) {
+      counts[hex.terrain] = (counts[hex.terrain] ?? 0) + 1;
+    }
+    expect(counts).toEqual({
+      forest: 6,
+      pasture: 6,
+      fields: 6,
+      mountains: 5,
+      hills: 5,
+      desert: 2,
+    });
+  });
+
+  it('has exactly one hex holding the robber, on a desert', () => {
+    const board = generateBoard(1, 6);
+    const robberHexes = board.hexes.filter((h) => h.hasRobber);
+    expect(robberHexes).toHaveLength(1);
+    expect(robberHexes[0].terrain).toBe('desert');
+  });
+
+  it('gives both deserts no number token', () => {
+    const board = generateBoard(1, 6);
+    const deserts = board.hexes.filter((h) => h.terrain === 'desert');
+    expect(deserts).toHaveLength(2);
+    for (const desert of deserts) expect(desert.numberToken).toBeNull();
+  });
+
+  it('assigns the correct 28-token number distribution', () => {
+    const board = generateBoard(1, 6);
+    const tokens = board.hexes
+      .map((h) => h.numberToken)
+      .filter((n): n is number => n !== null)
+      .sort((a, b) => a - b);
+    expect(tokens).toEqual([
+      2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12,
+    ]);
+  });
+
+  it('places 11 ports covering every resource', () => {
+    const board = generateBoard(1, 6);
+    expect(board.ports).toHaveLength(11);
+    const resourcePorts = board.ports.filter((p) => p.type === 'RESOURCE_2_TO_1');
+    const resources = new Set(resourcePorts.map((p) => p.resource));
+    expect(resources.size).toBe(5);
+  });
+
+  it('produces valid neighbor relationships (each hex has 6 edges and 6 intersections)', () => {
+    const board = generateBoard(1, 6);
+    for (const hex of board.hexes) {
+      expect(hex.edgeIds).toHaveLength(6);
+      expect(hex.intersectionIds).toHaveLength(6);
+    }
+  });
+
+  it('passes structural validation', () => {
+    const board = generateBoard(7, 6);
+    const result = validateBoard(board);
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+});

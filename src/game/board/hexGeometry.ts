@@ -47,6 +47,26 @@ export function generateHexCoords(radius: number): AxialCoord[] {
   return coords;
 }
 
+export const EXTENDED_BOARD_RADIUS = 3; // base radius for the 5-6 player extended board.
+
+/**
+ * The 30-hex "extended" board used for 5-6 players: a radius-3 hexagon (37 tiles)
+ * with the last row of each column trimmed off, producing the standard elongated
+ * 3-4-5-6-5-4-3 column shape rather than a full 4-5-6-7-6-5-4 hexagon.
+ */
+export function generateExtendedHexCoords(): AxialCoord[] {
+  const radius = EXTENDED_BOARD_RADIUS;
+  const coords: AxialCoord[] = [];
+  for (let q = -radius; q <= radius; q++) {
+    const rMin = Math.max(-radius, -q - radius);
+    const rMax = Math.min(radius, -q + radius) - 1;
+    for (let r = rMin; r <= rMax; r++) {
+      coords.push(makeAxial(q, r));
+    }
+  }
+  return coords;
+}
+
 /** The 6 neighboring axial coordinates of a hex (not filtered to any particular board). */
 export function getHexNeighborCoords(coord: AxialCoord): AxialCoord[] {
   return AXIAL_DIRECTIONS.map((dir) => makeAxial(coord.q + dir.q, coord.r + dir.r));

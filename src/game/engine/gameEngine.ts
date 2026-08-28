@@ -14,10 +14,17 @@ import { randomSeed } from '../utils/rng';
 import { EVENT_LOG_LIMIT } from './eventLog';
 import { generateDevelopmentDeck } from './developmentDeck';
 
-export const PLAYER_COLORS: PlayerColor[] = ['red', 'blue', 'white', 'orange'];
+export const PLAYER_COLORS: PlayerColor[] = [
+  'red',
+  'blue',
+  'white',
+  'orange',
+  'green',
+  'purple',
+];
 
 export const MIN_PLAYERS = 3;
-export const MAX_PLAYERS = 4;
+export const MAX_PLAYERS = 6;
 
 export function emptyResources(): ResourceCount {
   return { brick: 0, lumber: 0, wool: 0, grain: 0, ore: 0 };
@@ -44,9 +51,9 @@ export function createPlayers(names: string[]): Player[] {
 
 export function createInitialGame(playerNames: string[], seed: number = randomSeed()): GameState {
   const players = createPlayers(playerNames);
-  const board = generateBoard(seed);
-  const desert = board.hexes.find((hex) => hex.terrain === 'desert');
-  if (!desert) throw new Error('Generated board has no desert hex to place the robber on');
+  const board = generateBoard(seed, players.length);
+  const robberHex = board.hexes.find((hex) => hex.hasRobber);
+  if (!robberHex) throw new Error('Generated board has no hex holding the robber');
 
   return {
     phase: 'INITIAL_PLACEMENT',
@@ -60,10 +67,10 @@ export function createInitialGame(playerNames: string[], seed: number = randomSe
     hasRolledThisTurn: false,
     diceResult: null,
     lastDiceRoll: null,
-    robberHexId: desert.id,
+    robberHexId: robberHex.id,
     // Offset the deck seed so the development deck is not correlated with the
     // board layout that the same seed produced.
-    developmentDeck: generateDevelopmentDeck((seed ^ 0x9e3779b9) >>> 0),
+    developmentDeck: generateDevelopmentDeck((seed ^ 0x9e3779b9) >>> 0, players.length),
     pendingDiscards: [],
     stealCandidateIds: [],
     robberMoveReason: null,

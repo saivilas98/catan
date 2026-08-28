@@ -9,10 +9,15 @@ interface SetupScreenProps {
   onStart: (playerNames: string[], playerPins: string[]) => void;
 }
 
+const PLAYER_COUNT_OPTIONS = Array.from(
+  { length: MAX_PLAYERS - MIN_PLAYERS + 1 },
+  (_, i) => MIN_PLAYERS + i
+);
+
 export function SetupScreen({ onStart }: SetupScreenProps) {
   const [playerCount, setPlayerCount] = useState(4);
-  const [names, setNames] = useState<string[]>(['', '', '', '']);
-  const [pins, setPins] = useState<string[]>(['', '', '', '']);
+  const [names, setNames] = useState<string[]>(Array(MAX_PLAYERS).fill(''));
+  const [pins, setPins] = useState<string[]>(Array(MAX_PLAYERS).fill(''));
   const [showErrors, setShowErrors] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
@@ -60,7 +65,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
         </button>
 
         <div className="setup-player-count">
-          {[MIN_PLAYERS, MAX_PLAYERS].map((count) => (
+          {PLAYER_COUNT_OPTIONS.map((count) => (
             <button
               key={count}
               type="button"

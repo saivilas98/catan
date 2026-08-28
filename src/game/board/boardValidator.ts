@@ -17,7 +17,20 @@ const EXPECTED_TERRAIN_COUNTS: Record<TerrainType, number> = {
   desert: 1,
 };
 
+const EXTENDED_EXPECTED_TERRAIN_COUNTS: Record<TerrainType, number> = {
+  forest: 6,
+  pasture: 6,
+  fields: 6,
+  mountains: 5,
+  hills: 5,
+  desert: 2,
+};
+
 const EXPECTED_NUMBER_TOKENS = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12];
+
+const EXTENDED_EXPECTED_NUMBER_TOKENS = [
+  2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12,
+];
 
 function hasDuplicates(ids: string[]): boolean {
   return new Set(ids).size !== ids.length;
@@ -26,15 +39,28 @@ function hasDuplicates(ids: string[]): boolean {
 export function validateBoard(board: Board): BoardValidationResult {
   const errors: string[] = [];
 
-  if (board.hexes.length !== 19) {
-    errors.push(`Expected 19 hexes, found ${board.hexes.length}`);
+  // The 5-6 player extended board has 30 hexes instead of the standard 19 — pick
+  // the expected shape/counts based on which one this board actually is.
+  const extended = board.hexes.length > 19;
+  const expectedHexCount = extended ? 30 : 19;
+  const expectedTerrainCounts = extended
+    ? EXTENDED_EXPECTED_TERRAIN_COUNTS
+    : EXPECTED_TERRAIN_COUNTS;
+  const expectedNumberTokens = extended ? EXTENDED_EXPECTED_NUMBER_TOKENS : EXPECTED_NUMBER_TOKENS;
+  const expectedDesertCount = extended ? 2 : 1;
+  const expectedPortCount = extended ? 11 : 9;
+  const expectedGenericPortCount = extended ? 5 : 4;
+  const expectedResourcePortCount = extended ? 6 : 5;
+
+  if (board.hexes.length !== expectedHexCount) {
+    errors.push(`Expected ${expectedHexCount} hexes, found ${board.hexes.length}`);
   }
 
   const terrainCounts: Partial<Record<TerrainType, number>> = {};
   for (const hex of board.hexes) {
     terrainCounts[hex.terrain] = (terrainCounts[hex.terrain] ?? 0) + 1;
   }
-  for (const [terrain, expected] of Object.entries(EXPECTED_TERRAIN_COUNTS)) {
+  for (const [terrain, expected] of Object.entries(expectedTerrainCounts)) {
     const actual = terrainCounts[terrain as TerrainType] ?? 0;
     if (actual !== expected) {
       errors.push(`Expected ${expected} ${terrain} hexes, found ${actual}`);
@@ -42,16 +68,19 @@ export function validateBoard(board: Board): BoardValidationResult {
   }
 
   const deserts = board.hexes.filter((h) => h.terrain === 'desert');
-  if (deserts.length !== 1) {
-    errors.push(`Expected exactly 1 desert hex, found ${deserts.length}`);
+  if (deserts.length !== expectedDesertCount) {
+    errors.push(`Expected exactly ${expectedDesertCount} desert hex(es), found ${deserts.length}`);
   }
   for (const desert of deserts) {
     if (desert.numberToken !== null) {
       errors.push(`Desert hex ${desert.id} should not have a number token`);
     }
-    if (!desert.hasRobber) {
-      errors.push(`Desert hex ${desert.id} should start holding the robber`);
-    }
+  }
+  const robberHexes = board.hexes.filter((h) => h.hasRobber);
+  if (robberHexes.length !== 1) {
+    errors.push(`Expected exactly 1 hex holding the robber, found ${robberHexes.length}`);
+  } else if (robberHexes[0].terrain !== 'desert') {
+    errors.push(`Robber should start on a desert hex, found it on ${robberHexes[0].terrain}`);
   }
 
   const numberTokens = board.hexes
@@ -59,7 +88,7 @@ export function validateBoard(board: Board): BoardValidationResult {
     .map((h) => h.numberToken)
     .filter((n): n is number => n !== null)
     .sort((a, b) => a - b);
-  const expectedSorted = [...EXPECTED_NUMBER_TOKENS].sort((a, b) => a - b);
+  const expectedSorted = [...expectedNumberTokens].sort((a, b) => a - b);
   if (JSON.stringify(numberTokens) !== JSON.stringify(expectedSorted)) {
     errors.push('Number token distribution does not match the standard Catan set');
   }
@@ -127,20 +156,22 @@ export function validateBoard(board: Board): BoardValidationResult {
     }
   }
 
-  if (board.ports.length !== 9) {
-    errors.push(`Expected 9 ports, found ${board.ports.length}`);
+  if (board.ports.length !== expectedPortCount) {
+    errors.push(`Expected ${expectedPortCount} ports, found ${board.ports.length}`);
   }
   const genericPorts = board.ports.filter((p) => p.type === 'GENERIC_3_TO_1');
-  if (genericPorts.length !== 4) {
-    errors.push(`Expected 4 generic 3:1 ports, found ${genericPorts.length}`);
+  if (genericPorts.length !== expectedGenericPortCount) {
+    errors.push(`Expected ${expectedGenericPortCount} generic 3:1 ports, found ${genericPorts.length}`);
   }
   const resourcePorts = board.ports.filter((p) => p.type === 'RESOURCE_2_TO_1');
-  if (resourcePorts.length !== 5) {
-    errors.push(`Expected 5 resource-specific 2:1 ports, found ${resourcePorts.length}`);
+  if (resourcePorts.length !== expectedResourcePortCount) {
+    errors.push(
+      `Expected ${expectedResourcePortCount} resource-specific 2:1 ports, found ${resourcePorts.length}`
+    );
   }
   const resourcePortTypes = new Set(resourcePorts.map((p) => p.resource));
   if (resourcePortTypes.size !== 5) {
-    errors.push('Expected one resource-specific port per resource type');
+    errors.push('Expected every resource type to have at least one 2:1 port');
   }
   if (hasDuplicates(board.ports.map((p) => p.id))) {
     errors.push('Duplicate port IDs found');

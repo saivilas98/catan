@@ -1,5 +1,15 @@
 import type { Building, PlayerColor, Point, Road } from '../../game/models/types';
-import { PIECE_ASPECT, PLAYER_PIECE_ART, ROBBER_ART, ROBBER_ASPECT } from '../../data/terrainTheme';
+import {
+  PIECE_ASPECT,
+  PIECE_ASPECT_OVERRIDE,
+  PLAYER_PIECE_ART,
+  ROBBER_ART,
+  ROBBER_ASPECT,
+} from '../../data/terrainTheme';
+
+function pieceAspect(color: PlayerColor, piece: 'settlement' | 'city' | 'road'): number {
+  return PIECE_ASPECT_OVERRIDE[color]?.[piece] ?? PIECE_ASPECT[piece];
+}
 
 interface SettlementPieceProps {
   color: PlayerColor;
@@ -13,7 +23,7 @@ interface SettlementPieceProps {
  */
 export function SettlementPiece({ color, scale }: SettlementPieceProps) {
   const h = scale * 0.62;
-  const w = h * PIECE_ASPECT.settlement;
+  const w = h * pieceAspect(color, 'settlement');
 
   return (
     <g className="piece piece--settlement">
@@ -32,7 +42,7 @@ export function SettlementPiece({ color, scale }: SettlementPieceProps) {
 /** A meaningfully bigger structure, same anchoring convention as the settlement. */
 export function CityPiece({ color, scale }: SettlementPieceProps) {
   const h = scale * 0.74;
-  const w = h * PIECE_ASPECT.city;
+  const w = h * pieceAspect(color, 'city');
 
   return (
     <g className="piece piece--city">
@@ -68,7 +78,7 @@ export function RoadPiece({ from, to, color, scale }: RoadPieceProps) {
 
   const hexWidth = scale * 2;
   const length = hexWidth * 0.8 * 0.5;
-  const height = Math.max(length / PIECE_ASPECT.road, length * 0.16) * 1.9 * 0.5;
+  const height = Math.max(length / pieceAspect(color, 'road'), length * 0.16) * 1.9 * 0.5;
 
   return (
     // Position/rotation lives on this outer <g> as a plain SVG attribute; the

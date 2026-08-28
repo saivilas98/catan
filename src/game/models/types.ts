@@ -32,7 +32,7 @@ export const TERRAIN_TO_RESOURCE: Record<TerrainType, ResourceType | null> = {
   desert: null,
 };
 
-export type PlayerColor = 'red' | 'blue' | 'white' | 'orange';
+export type PlayerColor = 'red' | 'blue' | 'white' | 'orange' | 'green' | 'purple';
 
 export type GamePhase = 'SETUP' | 'INITIAL_PLACEMENT' | 'PLAYING' | 'GAME_OVER';
 
@@ -124,6 +124,18 @@ export const DEVELOPMENT_DECK_COMPOSITION: Record<DevelopmentCardType, number> =
   roadBuilding: 2,
   yearOfPlenty: 2,
   monopoly: 2,
+};
+
+/**
+ * The 5-6 player expansion deck: 34 cards. Standard expansion counts — more of
+ * everything except Victory Point, which stays at 5.
+ */
+export const EXTENDED_DEVELOPMENT_DECK_COMPOSITION: Record<DevelopmentCardType, number> = {
+  knight: 20,
+  victoryPoint: 5,
+  roadBuilding: 3,
+  yearOfPlenty: 3,
+  monopoly: 3,
 };
 
 export const DEVELOPMENT_CARD_COST: Partial<ResourceCount> = {

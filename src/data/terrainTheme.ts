@@ -1,4 +1,9 @@
-import type { DevelopmentCardType, ResourceType, TerrainType } from '../game/models/types';
+import type {
+  DevelopmentCardType,
+  PlayerColor,
+  ResourceType,
+  TerrainType,
+} from '../game/models/types';
 
 export interface TerrainTheme {
   label: string;
@@ -110,6 +115,8 @@ export const PLAYER_COLOR_HEX: Record<string, string> = {
   blue: '#3563a6',
   white: '#e8e4da',
   orange: '#d97b2b',
+  green: '#4f8a52',
+  purple: '#7d5aa6',
 };
 
 /**
@@ -142,6 +149,20 @@ export const PLAYER_PIECE_ART: Record<
     city: '/icon/pieces/orange-city.webp',
     road: '/icon/pieces/orange-road.webp',
   },
+  // Interim placeholders: cropped from icon_new.png as plain column slices, not
+  // tight alpha cutouts, so unlike the 4 colors above they still carry a colored
+  // background glow. Swap for tightly-cropped transparent art when available —
+  // see docs/dev-card-art-brief.md-style follow-up, not yet requested.
+  green: {
+    settlement: '/icon/pieces/green-settlement.png',
+    city: '/icon/pieces/green-city.png',
+    road: '/icon/pieces/green-road.png',
+  },
+  purple: {
+    settlement: '/icon/pieces/purple-settlement.png',
+    city: '/icon/pieces/purple-city.png',
+    road: '/icon/pieces/purple-road.png',
+  },
 };
 
 /** Natural pixel aspect ratio (width / height) of each extracted piece crop. */
@@ -149,6 +170,17 @@ export const PIECE_ASPECT: { settlement: number; city: number; road: number } = 
   settlement: 224 / 233,
   city: 244 / 259,
   road: 706 / 136,
+};
+
+/**
+ * Override aspect ratios for colors whose art wasn't cropped to the same
+ * tight-cutout convention as the original 4 (see the comment on PLAYER_PIECE_ART).
+ */
+export const PIECE_ASPECT_OVERRIDE: Partial<
+  Record<PlayerColor, { settlement: number; city: number; road: number }>
+> = {
+  green: { settlement: 256 / 410, city: 256 / 390, road: 256 / 130 },
+  purple: { settlement: 256 / 410, city: 256 / 390, road: 256 / 130 },
 };
 
 export const ROBBER_ART = '/icon/pieces/robber.webp';
