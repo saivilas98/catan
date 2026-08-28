@@ -1,8 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction } from '../engine/actions';
-import { createPlayingGame } from './helpers';
+import { placeBuilding } from '../engine/construction';
+import { createPlayingGame, giveResources } from './helpers';
 import { fixedDiceRng } from '../utils/fixedRng';
-import type { GameState } from '../models/types';
+import type { Edge, GameState } from '../models/types';
+
+function edgesOf(game: GameState, intersectionId: string): Edge[] {
+  const intersection = game.board.intersections.find((i) => i.id === intersectionId)!;
+  return intersection.edgeIds.map((id) => game.board.edges.find((e) => e.id === id)!);
+}
+
+/** Two edges that share one intersection — enough to place a settlement then a road off it. */
+function findEdgePair(game: GameState): { shared: string; edgeA: Edge; edgeB: Edge } {
+  const intersection = game.board.intersections.find((i) => i.edgeIds.length >= 2)!;
+  const [edgeA, edgeB] = edgesOf(game, intersection.id);
+  return { shared: intersection.id, edgeA, edgeB };
+}
 
 const THREE = ['Sai', 'Rahul', 'Ananya'];
 const FOUR = ['Sai', 'Rahul', 'Ananya', 'Karthik'];
@@ -193,5 +206,103 @@ describe('event log', () => {
     }
     const ids = game.eventLog.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+const FIVE = ['Sai', 'Rahul', 'Ananya', 'Karthik', 'Divya'];
+
+describe('Special Building Phase (5-6 players)', () => {
+  it('does NOT occur in 3-4 player games', () => {
+    let game = roll(createPlayingGame(THREE, 1));
+    game = endTurn(game);
+    expect(game.turnPhase).toBe('AWAITING_ROLL');
+    expect(game.specialBuildRoundOwnerId).toBeNull();
+
+    let fourGame = roll(createPlayingGame(FOUR, 1));
+    fourGame = endTurn(fourGame);
+    expect(fourGame.turnPhase).toBe('AWAITING_ROLL');
+    expect(fourGame.specialBuildRoundOwnerId).toBeNull();
+  });
+
+  it('starts after a 5-player turn ends, owned by whoever just went', () => {
+    let game = roll(createPlayingGame(FIVE, 1));
+    game = endTurn(game);
+    expect(game.turnPhase).toBe('SPECIAL_BUILDING');
+    expect(game.specialBuildRoundOwnerId).toBe('player-0');
+    expect(currentName(game)).toBe('Rahul');
+    // No turn actually advanced yet — that only happens once the phase resolves.
+    expect(game.turnNumber).toBe(1);
+  });
+
+  it('cycles every other player in order, then resumes real turns', () => {
+    let game = roll(createPlayingGame(FIVE, 1));
+    game = endTurn(game); // player-0's turn ends, SBP starts on player-1
+
+    const sbpOrder: string[] = [];
+    while (game.turnPhase === 'SPECIAL_BUILDING') {
+      sbpOrder.push(currentName(game));
+      game = endTurn(game); // pass
+    }
+
+    expect(sbpOrder).toEqual(['Rahul', 'Ananya', 'Karthik', 'Divya']);
+    // Real play resumes with the player who would have gone next anyway.
+    expect(currentName(game)).toBe('Rahul');
+    expect(game.turnPhase).toBe('AWAITING_ROLL');
+    expect(game.turnNumber).toBe(2);
+    expect(game.specialBuildRoundOwnerId).toBeNull();
+  });
+
+  it('rejects rolling dice during Special Building Phase', () => {
+    let game = roll(createPlayingGame(FIVE, 1));
+    game = endTurn(game);
+    const result = applyAction(game, { type: 'ROLL_DICE', playerId: game.currentPlayerId });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('WRONG_PHASE');
+  });
+
+  it('rejects proposing a trade during Special Building Phase', () => {
+    let game = roll(createPlayingGame(FIVE, 1));
+    game = endTurn(game);
+    const result = applyAction(game, {
+      type: 'PROPOSE_TRADE',
+      playerId: game.currentPlayerId,
+      targetPlayerId: null,
+      offeredResources: { brick: 1 },
+      requestedResources: { lumber: 1 },
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('rejects an out-of-turn player acting during Special Building Phase', () => {
+    let game = roll(createPlayingGame(FIVE, 1));
+    game = endTurn(game); // SBP now belongs to player-1 (Rahul)
+    const result = applyAction(game, { type: 'END_TURN', playerId: 'player-2' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('NOT_CURRENT_PLAYER');
+  });
+
+  it('lets the Special Building participant build without rolling', () => {
+    let game = roll(createPlayingGame(FIVE, 1));
+    game = endTurn(game); // SBP now belongs to player-1 (Rahul)
+    expect(game.currentPlayerId).toBe('player-1');
+
+    const { shared, edgeA } = findEdgePair(game);
+    game = placeBuilding(game, 'player-1', shared, 'settlement', { free: true });
+    game = giveResources(game, 'player-1', { brick: 1, lumber: 1 });
+
+    const result = applyAction(game, {
+      type: 'BUILD_ROAD',
+      playerId: 'player-1',
+      edgeId: edgeA.id,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.state.board.edges.find((e) => e.id === edgeA.id)?.road?.ownerId).toBe(
+        'player-1'
+      );
+      // Building doesn't end the participant's SBP slot — passing does.
+      expect(result.state.turnPhase).toBe('SPECIAL_BUILDING');
+      expect(result.state.currentPlayerId).toBe('player-1');
+    }
   });
 });

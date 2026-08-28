@@ -27,6 +27,7 @@ const PLAYING_ONLY_PHASES = new Set([
   'MOVING_ROBBER',
   'STEALING',
   'ROAD_BUILDING',
+  'SPECIAL_BUILDING',
 ]);
 
 export function validateGameState(state: GameState): StateValidationResult {
@@ -220,6 +221,19 @@ export function validateGameState(state: GameState): StateValidationResult {
   if (state.roadBuildingRoadsRemaining < 0) errors.push('Negative Road Building roads remaining');
   if (state.turnPhase !== 'ROAD_BUILDING' && state.roadBuildingRoadsRemaining > 0) {
     errors.push('Free roads owed outside the Road Building phase');
+  }
+  if (state.turnPhase === 'SPECIAL_BUILDING') {
+    if (!state.specialBuildRoundOwnerId) {
+      errors.push('Special Building Phase with no round owner recorded');
+    } else if (!playerIds.has(state.specialBuildRoundOwnerId)) {
+      errors.push(`Special Building round owner ${state.specialBuildRoundOwnerId} is unknown`);
+    }
+    if (state.players.length < 5) {
+      errors.push('Special Building Phase should never occur in a 3-4 player game');
+    }
+  }
+  if (state.turnPhase !== 'SPECIAL_BUILDING' && state.specialBuildRoundOwnerId !== null) {
+    errors.push('Special Building round owner set outside the Special Building phase');
   }
 
   // Victory points must agree with the authoritative calculation.

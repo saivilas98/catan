@@ -15,6 +15,7 @@ interface TurnPanelProps {
 export function TurnPanel({ game, rolling, error, onRoll }: TurnPanelProps) {
   const currentPlayer = getCurrentPlayer(game);
   const isSetup = game.phase === 'INITIAL_PLACEMENT';
+  const isSpecialBuilding = game.turnPhase === 'SPECIAL_BUILDING';
   const mayRoll = canRollDice(game, currentPlayer.id);
   const dice = game.diceResult;
   // Hide the outcome while the dice are visually tumbling.
@@ -29,7 +30,11 @@ export function TurnPanel({ game, rolling, error, onRoll }: TurnPanelProps) {
           style={{ background: PLAYER_COLOR_HEX[currentPlayer.color] }}
         />
         <div>
-          <h2 className="turn-panel__title">{currentPlayer.name}&rsquo;s Turn</h2>
+          <h2 className="turn-panel__title">
+            {isSpecialBuilding
+              ? `${currentPlayer.name}’s Special Build`
+              : `${currentPlayer.name}’s Turn`}
+          </h2>
           <p className="turn-panel__subtitle">
             {isSetup
               ? `Setup round ${getSetupRound(game)} of 2`
@@ -43,6 +48,11 @@ export function TurnPanel({ game, rolling, error, onRoll }: TurnPanelProps) {
           {game.setupStep === 'PLACE_SETTLEMENT'
             ? 'Place a settlement on a highlighted corner.'
             : 'Place a road touching your new settlement.'}
+        </p>
+      ) : isSpecialBuilding ? (
+        <p className="turn-panel__setup" aria-live="polite">
+          Build or buy a development card with resources already in hand, then pass —
+          no roll, no trading.
         </p>
       ) : (
         <>
@@ -61,7 +71,7 @@ export function TurnPanel({ game, rolling, error, onRoll }: TurnPanelProps) {
 
       {error && <p className="turn-panel__error">{error}</p>}
 
-      {!isSetup && (
+      {!isSetup && !isSpecialBuilding && (
         <div className="turn-panel__actions">
           <button
             type="button"
@@ -93,6 +103,8 @@ function formatPhase(phase: GameState['turnPhase']): string {
       return 'Road building';
     case 'ENDING_TURN':
       return 'Ending turn';
+    case 'SPECIAL_BUILDING':
+      return 'Special Building Phase';
     default:
       return phase;
   }

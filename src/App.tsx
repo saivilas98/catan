@@ -847,6 +847,7 @@ function App() {
         <HandoffOverlay
           player={game.players.find((p) => p.id === handoffPlayerId)!}
           turnNumber={game.turnNumber}
+          isSpecialBuilding={game.turnPhase === 'SPECIAL_BUILDING'}
           onContinue={() => setHandoffPlayerId(null)}
         />
       )}

@@ -33,7 +33,8 @@ export function canAffordDevelopmentCard(state: GameState, playerId: string): bo
 
 export function canBuyDevelopmentCard(state: GameState, playerId: string): DevelopmentCheck {
   if (state.phase !== 'PLAYING') return no('Development cards can only be bought during play.');
-  if (state.turnPhase !== 'AWAITING_ACTIONS') {
+  // Special Building Phase (5-6 players) allows buying with cards already in hand.
+  if (state.turnPhase !== 'AWAITING_ACTIONS' && state.turnPhase !== 'SPECIAL_BUILDING') {
     return no('You must roll the dice before buying a development card.');
   }
   if (playerId !== state.currentPlayerId) return no('It is not your turn.');

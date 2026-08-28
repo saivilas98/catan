@@ -193,6 +193,12 @@ function rollDiceAction(state: GameState, playerId: string, deps: ActionDeps): A
       `Cannot roll dice: ${playerName(state, playerId)} has already rolled this turn.`
     );
   }
+  if (state.turnPhase !== 'AWAITING_ROLL') {
+    return fail(
+      'WRONG_PHASE',
+      'Cannot roll dice: no roll is expected right now.'
+    );
+  }
 
   // Use the injected RNG when given, otherwise advance the game's own seeded stream
   // so a seed reproduces an entire game's rolls.
@@ -262,7 +268,14 @@ function rollDiceAction(state: GameState, playerId: string, deps: ActionDeps): A
   return { ok: true, state: next, awards: production.awards };
 }
 
+/** Player count at which the 5-6 player expansion's Special Building Phase kicks in. */
+const SPECIAL_BUILDING_PLAYER_THRESHOLD = 5;
+
 function endTurnAction(state: GameState, playerId: string): ActionResult {
+  if (state.turnPhase === 'SPECIAL_BUILDING') {
+    return endSpecialBuildTurnAction(state, playerId);
+  }
+
   const actorError = validateActor(state, playerId);
   if (actorError) return { ok: false, error: actorError };
 
@@ -298,6 +311,31 @@ function endTurnAction(state: GameState, playerId: string): ActionResult {
     });
   }
 
+  // 5-6 player games route every turn through the Special Building Phase before the
+  // next player's real turn begins; 3-4 player games skip straight there.
+  if (state.players.length >= SPECIAL_BUILDING_PLAYER_THRESHOLD) {
+    next = {
+      ...next,
+      currentPlayerId: nextPlayer.id,
+      turnPhase: 'SPECIAL_BUILDING',
+      specialBuildRoundOwnerId: playerId,
+      hasRolledThisTurn: false,
+      diceResult: null,
+      hasPlayedDevCardThisTurn: false,
+      roadBuildingRoadsRemaining: 0,
+      robberMoveReason: null,
+      stealCandidateIds: [],
+    };
+    return {
+      ok: true,
+      state: logEvent(next, {
+        type: 'SPECIAL_BUILD_STARTED',
+        playerId: nextPlayer.id,
+        message: `Special Building Phase — ${playerName(next, nextPlayer.id)} may build`,
+      }),
+    };
+  }
+
   next = {
     ...next,
     currentPlayerId: nextPlayer.id,
@@ -312,6 +350,55 @@ function endTurnAction(state: GameState, playerId: string): ActionResult {
     stealCandidateIds: [],
   };
 
+  return { ok: true, state: next };
+}
+
+/**
+ * Passing on a Special Building Phase slot. Reuses the END_TURN action so the UI's
+ * existing "end turn" control works unchanged — the meaning just differs based on
+ * turnPhase. Advances currentPlayerId to the next player in the cycle; once that
+ * would land back on whoever started the phase (specialBuildRoundOwnerId), the
+ * phase is over and a real turn begins for the player right after them.
+ */
+function endSpecialBuildTurnAction(state: GameState, playerId: string): ActionResult {
+  if (playerId !== state.currentPlayerId) {
+    return fail(
+      'NOT_CURRENT_PLAYER',
+      `Cannot act: it is ${playerName(state, state.currentPlayerId)}'s Special Building slot, not ${playerName(state, playerId)}'s.`
+    );
+  }
+  const roundOwnerId = state.specialBuildRoundOwnerId;
+  if (!roundOwnerId) {
+    return fail('WRONG_PHASE', 'No Special Building Phase is in progress.');
+  }
+
+  const currentIndex = state.players.findIndex((p) => p.id === playerId);
+  const nextPlayer = state.players[(currentIndex + 1) % state.players.length];
+
+  let next: GameState = logEvent(state, {
+    type: 'TURN_ENDED',
+    playerId,
+    message: `${playerName(state, playerId)} passed their Special Building slot`,
+  });
+
+  if (nextPlayer.id === roundOwnerId) {
+    // Every other player has had their slot, and the raw rotation has come back
+    // around to whoever's turn just ended — that's not who plays next, though:
+    // the real next turn belongs to the player right after the round owner (the
+    // very first Special Building participant), same as an ordinary END_TURN.
+    const ownerIndex = state.players.findIndex((p) => p.id === roundOwnerId);
+    const realNextPlayer = state.players[(ownerIndex + 1) % state.players.length];
+    next = {
+      ...next,
+      currentPlayerId: realNextPlayer.id,
+      turnNumber: next.turnNumber + 1,
+      turnPhase: 'AWAITING_ROLL',
+      specialBuildRoundOwnerId: null,
+    };
+    return { ok: true, state: next };
+  }
+
+  next = { ...next, currentPlayerId: nextPlayer.id };
   return { ok: true, state: next };
 }
 
@@ -338,7 +425,9 @@ function blockingPhaseMessage(state: GameState): string | null {
 function validateBuildContext(state: GameState, playerId: string): GameError | null {
   const actorError = validateActor(state, playerId);
   if (actorError) return actorError;
-  if (!state.hasRolledThisTurn) {
+  // Special Building Phase (5-6 players) builds with cards already in hand —
+  // no roll happens during it.
+  if (state.turnPhase !== 'SPECIAL_BUILDING' && !state.hasRolledThisTurn) {
     return {
       code: 'MUST_ROLL_FIRST',
       message: 'You must roll the dice before building.',

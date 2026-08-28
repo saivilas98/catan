@@ -113,11 +113,15 @@ describe('city upgrade rules', () => {
     const die1 = Math.max(1, Math.min(6, total - 1));
 
     const settlementRoll = rollAs(
-      { ...asSettlement, hasRolledThisTurn: false },
+      { ...asSettlement, hasRolledThisTurn: false, turnPhase: 'AWAITING_ROLL' },
       die1,
       total - die1
     );
-    const cityRoll = rollAs({ ...asCity, hasRolledThisTurn: false }, die1, total - die1);
+    const cityRoll = rollAs(
+      { ...asCity, hasRolledThisTurn: false, turnPhase: 'AWAITING_ROLL' },
+      die1,
+      total - die1
+    );
 
     expect(settlementRoll.players[0].resources.lumber).toBe(1);
     expect(cityRoll.players[0].resources.lumber).toBe(2);

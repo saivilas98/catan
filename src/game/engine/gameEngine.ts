@@ -76,6 +76,7 @@ export function createInitialGame(playerNames: string[], seed: number = randomSe
     robberMoveReason: null,
     roadBuildingRoadsRemaining: 0,
     hasPlayedDevCardThisTurn: false,
+    specialBuildRoundOwnerId: null,
     largestArmyPlayerId: null,
     longestRoadPlayerId: null,
     longestRoadLength: 0,
@@ -112,6 +113,9 @@ export function isCurrentPlayer(game: GameState, playerId: string): boolean {
 /** Whether the given player may roll right now — mirrors the engine's own validation. */
 export function canRollDice(game: GameState, playerId: string): boolean {
   return (
-    game.phase === 'PLAYING' && game.currentPlayerId === playerId && !game.hasRolledThisTurn
+    game.phase === 'PLAYING' &&
+    game.turnPhase === 'AWAITING_ROLL' &&
+    game.currentPlayerId === playerId &&
+    !game.hasRolledThisTurn
   );
 }

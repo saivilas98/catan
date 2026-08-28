@@ -48,6 +48,12 @@ export type GamePhase = 'SETUP' | 'INITIAL_PLACEMENT' | 'PLAYING' | 'GAME_OVER';
  * Monopoly and Year of Plenty deliberately have no phase of their own: each is a
  * single decision, so the UI collects the choice and dispatches one atomic action.
  * That avoids a half-committed state where the card is spent but unresolved.
+ *
+ * SPECIAL_BUILDING is the 5-6 player expansion's extra phase: after each player's
+ * normal turn, every other player gets one uninterrupted chance, in turn order, to
+ * build or buy development cards with resources already in hand — no roll, no
+ * trading. See GameState.specialBuildRoundOwnerId for how the cycle back to a real
+ * turn is tracked. Never entered in 3-4 player games.
  */
 export type TurnPhase =
   | 'AWAITING_ROLL'
@@ -56,7 +62,8 @@ export type TurnPhase =
   | 'MOVING_ROBBER'
   | 'STEALING'
   | 'ROAD_BUILDING'
-  | 'ENDING_TURN';
+  | 'ENDING_TURN'
+  | 'SPECIAL_BUILDING';
 
 export type BuildingType = 'settlement' | 'city';
 
@@ -304,7 +311,8 @@ export type GameEventType =
   | 'RESOURCE_STOLEN'
   | 'LARGEST_ARMY'
   | 'LONGEST_ROAD'
-  | 'GAME_WON';
+  | 'GAME_WON'
+  | 'SPECIAL_BUILD_STARTED';
 
 export interface GameEvent {
   id: string;
@@ -371,6 +379,13 @@ export interface GameState {
   roadBuildingRoadsRemaining: number;
   /** Catan allows only one development card played per turn. */
   hasPlayedDevCardThisTurn: boolean;
+  /**
+   * Set while turnPhase === 'SPECIAL_BUILDING': the player whose normal turn just
+   * ended and triggered the phase. The cycle (currentPlayerId rotating through
+   * every other player) is complete once it would land back on this player —
+   * at which point the real next turn begins. Always null in 3-4 player games.
+   */
+  specialBuildRoundOwnerId: string | null;
   largestArmyPlayerId: string | null;
   longestRoadPlayerId: string | null;
   /** Trail length of the current Longest Road holder; 0 when unclaimed. */

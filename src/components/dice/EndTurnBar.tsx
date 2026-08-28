@@ -14,6 +14,7 @@ interface EndTurnBarProps {
  */
 export function EndTurnBar({ game, rolling, onEndTurn }: EndTurnBarProps) {
   const blocked = phaseInstruction(game) !== null;
+  const isSpecialBuilding = game.turnPhase === 'SPECIAL_BUILDING';
 
   return (
     <div className="end-turn-bar">
@@ -23,7 +24,7 @@ export function EndTurnBar({ game, rolling, onEndTurn }: EndTurnBarProps) {
         onClick={onEndTurn}
         disabled={rolling || blocked}
       >
-        End Turn
+        {isSpecialBuilding ? 'Pass' : 'End Turn'}
       </button>
     </div>
   );

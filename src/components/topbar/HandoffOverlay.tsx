@@ -6,6 +6,8 @@ interface HandoffOverlayProps {
   player: Player;
   turnNumber: number;
   onContinue: () => void;
+  /** True when this handoff is into a Special Building slot, not a real turn. */
+  isSpecialBuilding?: boolean;
 }
 
 /**
@@ -15,7 +17,12 @@ interface HandoffOverlayProps {
  * (The private-cards view is already closed by the time this appears — see the
  * App-level effect that hides it on any currentPlayerId change.)
  */
-export function HandoffOverlay({ player, turnNumber, onContinue }: HandoffOverlayProps) {
+export function HandoffOverlay({
+  player,
+  turnNumber,
+  onContinue,
+  isSpecialBuilding,
+}: HandoffOverlayProps) {
   const color = PLAYER_COLOR_HEX[player.color];
   return (
     <div className="handoff-curtain" style={{ '--curtain-color': color } as CSSProperties}>
@@ -24,10 +31,11 @@ export function HandoffOverlay({ player, turnNumber, onContinue }: HandoffOverla
         <span className="handoff-curtain__swatch" style={{ background: color }} />
         <h2 className="handoff-modal__title">{player.name}</h2>
         <p className="handoff-modal__body">
-          Turn {turnNumber} · {player.victoryPoints} VP
+          {isSpecialBuilding ? 'Special Building Phase' : `Turn ${turnNumber}`} ·{' '}
+          {player.victoryPoints} VP
         </p>
         <button type="button" className="btn btn--primary handoff-curtain__btn" onClick={onContinue}>
-          I am {player.name} — Begin Turn
+          {isSpecialBuilding ? `I am ${player.name} — Special Build` : `I am ${player.name} — Begin Turn`}
         </button>
       </div>
     </div>

@@ -72,6 +72,7 @@ export function redactState(state: GameState, viewerPlayerId: string): RedactedG
     robberMoveReason: state.robberMoveReason,
     roadBuildingRoadsRemaining: state.roadBuildingRoadsRemaining,
     hasPlayedDevCardThisTurn: state.hasPlayedDevCardThisTurn,
+    specialBuildRoundOwnerId: state.specialBuildRoundOwnerId,
     largestArmyPlayerId: state.largestArmyPlayerId,
     longestRoadPlayerId: state.longestRoadPlayerId,
     longestRoadLength: state.longestRoadLength,
