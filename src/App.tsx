@@ -54,7 +54,9 @@ import { HandoffOverlay } from './components/topbar/HandoffOverlay';
 import { ConfirmNewGameModal } from './components/topbar/ConfirmNewGameModal';
 import { DevPanel } from './components/dev/DevPanel';
 import { TopBarLite } from './components/layout/TopBarLite';
-import { BottomDock } from './components/layout/BottomDock';
+import { LeftDock } from './components/layout/LeftDock';
+import { RightDock } from './components/layout/RightDock';
+import { PrimaryActionButton } from './components/layout/PrimaryActionButton';
 import { Popover } from './components/layout/Popover';
 import './App.css';
 
@@ -613,7 +615,7 @@ function App() {
       return <ModeSelect onSelect={setSessionMode} />;
     }
     if (sessionMode === 'local') {
-      return <SetupScreen onStart={startGame} />;
+      return <SetupScreen onStart={startGame} onBack={() => setSessionMode(null)} />;
     }
     // sessionMode is 'host' or 'join': collect a name/address, connect, then
     // show the live lobby. Sprint C turns "game started" into a real GameState;
@@ -736,20 +738,22 @@ function App() {
       </main>
 
       {game.phase === 'PLAYING' && (
-        <BottomDock
-          game={game}
-          resources={viewerPlayer.resources}
-          rolling={rolling}
-          showOrdinaryActions={showOrdinaryActions}
-          pendingTradeCount={pendingTradeCount}
-          devCardCount={viewerDevCardCount}
-          onRoll={handleRoll}
-          onEndTurn={handleEndTurn}
-          onOpenBuild={() => setActivePopup('build')}
-          onOpenTrade={() => setActivePopup('trade')}
-          onOpenCards={() => setActivePopup('cards')}
-          onOpenLog={() => setActivePopup('log')}
-        />
+        <>
+          <LeftDock
+            resources={viewerPlayer.resources}
+            showOrdinaryActions={showOrdinaryActions}
+            devCardCount={viewerDevCardCount}
+            onOpenBuild={() => setActivePopup('build')}
+            onOpenCards={() => setActivePopup('cards')}
+          />
+          <RightDock
+            canOpenTrade={showOrdinaryActions || pendingTradeCount > 0}
+            pendingTradeCount={pendingTradeCount}
+            onOpenTrade={() => setActivePopup('trade')}
+            onOpenLog={() => setActivePopup('log')}
+          />
+          <PrimaryActionButton game={game} rolling={rolling} onRoll={handleRoll} onEndTurn={handleEndTurn} />
+        </>
       )}
 
       {activePopup === 'players' && (

@@ -8,6 +8,7 @@ import { FullscreenButton } from '../layout/FullscreenButton';
 
 interface SetupScreenProps {
   onStart: (playerNames: string[], playerPins: string[]) => void;
+  onBack: () => void;
 }
 
 const PLAYER_COUNT_OPTIONS = Array.from(
@@ -15,7 +16,7 @@ const PLAYER_COUNT_OPTIONS = Array.from(
   (_, i) => MIN_PLAYERS + i
 );
 
-export function SetupScreen({ onStart }: SetupScreenProps) {
+export function SetupScreen({ onStart, onBack }: SetupScreenProps) {
   const [playerCount, setPlayerCount] = useState(4);
   const [names, setNames] = useState<string[]>(Array(MAX_PLAYERS).fill(''));
   const [pins, setPins] = useState<string[]>(Array(MAX_PLAYERS).fill(''));
@@ -126,6 +127,9 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
 
         <button type="button" className="setup-start-btn" onClick={handleStart}>
           START GAME
+        </button>
+        <button type="button" className="setup-help-link" onClick={onBack}>
+          ← Back
         </button>
       </div>
 

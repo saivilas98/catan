@@ -493,14 +493,16 @@
   min-height: 0;
 }
 
-/* ---------- Side dock ---------- */
+/* ---------- Side docks ---------- */
 
-/* Floats over the board's left edge — where a wide-screen layout otherwise
-   leaves open water — rather than claiming its own row, so the board stage
-   still gets the full remaining space to scale into. */
-.bottom-dock {
+/* Float over the board's left/right edges — where a wide-screen layout
+   otherwise leaves open water — rather than claiming their own row, so the
+   board stage still gets the full remaining space to scale into. Left holds
+   your own hand (resources, Build, Cards); right holds the actions about the
+   wider game (Trade, Log); the primary Roll/End Turn button lives on its own
+   next to the left dock (see .primary-action-btn), not inside either. */
+.side-dock {
   position: absolute;
-  left: 0.6rem;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -516,7 +518,15 @@
   box-shadow: 0 14px 30px -16px rgba(0, 0, 0, 0.25);
 }
 
-.bottom-dock__resources {
+.side-dock--left {
+  left: 0.6rem;
+}
+
+.side-dock--right {
+  right: 0.6rem;
+}
+
+.side-dock__resources {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -540,14 +550,14 @@
   background: var(--parchment-shade);
 }
 
-.bottom-dock__divider {
+.side-dock__divider {
   width: 22px;
   height: 1px;
   background: var(--line);
   flex-shrink: 0;
 }
 
-.bottom-dock__actions {
+.side-dock__actions {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -593,28 +603,31 @@
   justify-content: center;
 }
 
-.dock-primary-btn {
-  width: 56px;
-  padding: 0.55rem 0.3rem;
-  border-radius: 16px;
+/* ---------- Primary action button (Roll / Pass / End Turn) ---------- */
+
+.primary-action-btn {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.7rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
   border: none;
   background: linear-gradient(160deg, var(--gold-bright) 0%, var(--gold) 100%);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.68rem;
-  line-height: 1.15;
-  letter-spacing: 0.01em;
-  white-space: normal;
-  text-align: center;
-  box-shadow: 0 10px 20px -10px rgba(179, 98, 47, 0.55);
+  font-size: 1.5rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 24px -10px rgba(179, 98, 47, 0.55);
   transition: transform 0.12s ease, opacity 0.12s ease;
 }
 
-.dock-primary-btn:hover:not(:disabled) {
+.primary-action-btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-.dock-primary-btn:disabled {
+.primary-action-btn:disabled {
   opacity: 0.4;
   box-shadow: none;
 }
@@ -767,22 +780,30 @@
     padding: 0.4rem;
   }
 
-  /* The board is too narrow on small screens to spare room on its left edge,
-     so the dock goes back to a horizontal bar along the bottom here. */
-  .bottom-dock {
-    left: 50%;
+  /* The board is too narrow on small screens to spare room on its side
+     edges, so both docks go back to horizontal bars along the bottom
+     corners, with the primary button floating between them. */
+  .side-dock {
     top: auto;
     bottom: 0.5rem;
-    transform: translateX(-50%);
+    transform: none;
     flex-direction: row;
     flex-wrap: wrap;
     max-height: none;
-    width: min(420px, calc(100% - 1rem));
     border-radius: 20px;
     justify-content: center;
   }
 
-  .bottom-dock__resources {
+  .side-dock--left {
+    left: 0.4rem;
+    width: min(230px, calc(58% - 0.6rem));
+  }
+
+  .side-dock--right {
+    right: 0.4rem;
+  }
+
+  .side-dock__resources {
     order: 2;
     flex-direction: row;
     flex-wrap: wrap;
@@ -790,19 +811,18 @@
     justify-content: center;
   }
 
-  .bottom-dock__divider {
+  .side-dock__divider {
     display: none;
   }
 
-  .bottom-dock__actions {
+  .side-dock__actions {
     flex-direction: row;
   }
 
-  .dock-primary-btn {
-    width: auto;
-    padding: 0.55rem 1rem;
-    font-size: 0.8rem;
-    white-space: nowrap;
+  .primary-action-btn {
+    left: 50%;
+    bottom: 0.6rem;
+    transform: translateX(-50%);
   }
 
   .dev-buy-btn {
