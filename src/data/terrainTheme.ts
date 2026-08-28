@@ -71,13 +71,38 @@ export const RESOURCE_DISPLAY: Record<ResourceType, { icon: string; label: strin
 
 export const DEV_CARD_DISPLAY: Record<
   DevelopmentCardType,
-  { icon: string; label: string; blurb: string }
+  { icon: string; label: string; blurb: string; art: string }
 > = {
-  knight: { icon: '🛡️', label: 'Knight', blurb: 'Move the robber and steal' },
-  roadBuilding: { icon: '🛣️', label: 'Road Building', blurb: 'Place 2 free roads' },
-  yearOfPlenty: { icon: '🎁', label: 'Year of Plenty', blurb: 'Take 2 from the bank' },
-  monopoly: { icon: '💰', label: 'Monopoly', blurb: 'Take all of one resource' },
-  victoryPoint: { icon: '⭐', label: 'Victory Point', blurb: 'Counts secretly toward victory' },
+  knight: {
+    icon: '🛡️',
+    label: 'Knight',
+    blurb: 'Move the robber and steal',
+    art: '/icon/devcards/knight.png',
+  },
+  roadBuilding: {
+    icon: '🛣️',
+    label: 'Road Building',
+    blurb: 'Place 2 free roads',
+    art: '/icon/devcards/road-building.png',
+  },
+  yearOfPlenty: {
+    icon: '🎁',
+    label: 'Year of Plenty',
+    blurb: 'Take 2 from the bank',
+    art: '/icon/devcards/year-of-plenty.png',
+  },
+  monopoly: {
+    icon: '💰',
+    label: 'Monopoly',
+    blurb: 'Take all of one resource',
+    art: '/icon/devcards/monopoly.png',
+  },
+  victoryPoint: {
+    icon: '⭐',
+    label: 'Victory Point',
+    blurb: 'Counts secretly toward victory',
+    art: '/icon/devcards/victory-point.png',
+  },
 };
 
 export const PLAYER_COLOR_HEX: Record<string, string> = {

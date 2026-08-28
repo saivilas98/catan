@@ -1883,62 +1883,44 @@
 }
 
 .dev-card-face {
-  width: 108px;
-  min-height: 148px;
+  width: 120px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: stretch;
   gap: 0.35rem;
-  padding: 0.6rem 0.5rem 0.55rem;
-  border-radius: 10px;
-  background: var(--parchment);
-  border: 3px solid var(--band, #6b5a3a);
-  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.6);
   position: relative;
-}
-
-.dev-card-face::before {
-  /* Double-rule inset frame, classic card border. */
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border: 1px solid var(--band, #6b5a3a);
-  border-radius: 6px;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.dev-card-face--vp {
-  background: linear-gradient(160deg, #f3e5b8 0%, var(--parchment) 100%);
+  overflow: hidden;
 }
 
 .dev-card-face--fresh {
   opacity: 0.75;
 }
 
-.dev-card-face__icon {
-  font-size: 1.7rem;
-  line-height: 1;
-  margin-top: 0.15rem;
+.dev-card-face__art {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+  pointer-events: none;
+  user-select: none;
 }
 
-.dev-card-face__label {
-  font-size: 0.74rem;
+.dev-card-face__fresh-tag {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.4rem;
+  right: 0.4rem;
+  font-size: 0.58rem;
   font-weight: 700;
-  color: #3a2f1e;
-  letter-spacing: 0.02em;
-}
-
-.dev-card-face__blurb {
-  font-size: 0.6rem;
-  color: #6b5a3a;
-  line-height: 1.25;
-  flex: 1;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 6px;
+  padding: 0.15rem 0.3rem;
 }
 
 .dev-card-face__play {
-  width: 100%;
   font-size: 0.68rem;
   padding: 0.32rem;
 }

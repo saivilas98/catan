@@ -9,15 +9,6 @@ interface PrivateDevCardsProps {
   onHide: () => void;
 }
 
-/** Band color per card class — matches real-Catan convention without copying its art. */
-const CARD_BAND: Record<DevelopmentCardType, string> = {
-  knight: '#a5432f',
-  roadBuilding: '#4f6b3a',
-  yearOfPlenty: '#4f6b3a',
-  monopoly: '#4f6b3a',
-  victoryPoint: '#b3862f',
-};
-
 /**
  * The actual card identities, shown only after a correct PIN. This overlay is the
  * ONLY place in the whole app where a player's hand is rendered by name — nowhere
@@ -67,16 +58,17 @@ export function PrivateDevCards({ game, player, onPlay, onHide }: PrivateDevCard
                   } as CSSProperties}
                 >
                   <div
-                    className={`dev-card-face dev-card-face--${isVictoryPoint ? 'vp' : 'action'}${boughtThisTurn ? ' dev-card-face--fresh' : ''}`}
-                    style={{ '--band': CARD_BAND[card.type] } as React.CSSProperties}
+                    className={`dev-card-face${boughtThisTurn ? ' dev-card-face--fresh' : ''}`}
                   >
-                    <span className="dev-card-face__icon" aria-hidden="true">
-                      {display.icon}
-                    </span>
-                    <span className="dev-card-face__label">{display.label}</span>
-                    <span className="dev-card-face__blurb">
-                      {boughtThisTurn && !isVictoryPoint ? 'Bought this turn' : display.blurb}
-                    </span>
+                    <img
+                      className="dev-card-face__art"
+                      src={display.art}
+                      alt={display.label}
+                      draggable={false}
+                    />
+                    {boughtThisTurn && !isVictoryPoint && (
+                      <span className="dev-card-face__fresh-tag">Bought this turn</span>
+                    )}
                     {!isVictoryPoint && (
                       <button
                         type="button"
