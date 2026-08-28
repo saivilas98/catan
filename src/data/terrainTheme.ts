@@ -149,10 +149,10 @@ export const PLAYER_PIECE_ART: Record<
     city: '/icon/pieces/orange-city.webp',
     road: '/icon/pieces/orange-road.webp',
   },
-  // Interim placeholders: cropped from icon_new.png as plain column slices, not
-  // tight alpha cutouts, so unlike the 4 colors above they still carry a colored
-  // background glow. Swap for tightly-cropped transparent art when available —
-  // see docs/dev-card-art-brief.md-style follow-up, not yet requested.
+  // Tight alpha cutouts extracted from icon_new.png's own alpha channel (isolating
+  // the largest connected opaque region per piece, same end result as the other 4
+  // colors' cutouts — see PIECE_ASPECT_OVERRIDE for their slightly different crop
+  // proportions).
   green: {
     settlement: '/icon/pieces/green-settlement.png',
     city: '/icon/pieces/green-city.png',
@@ -179,8 +179,8 @@ export const PIECE_ASPECT: { settlement: number; city: number; road: number } = 
 export const PIECE_ASPECT_OVERRIDE: Partial<
   Record<PlayerColor, { settlement: number; city: number; road: number }>
 > = {
-  green: { settlement: 256 / 410, city: 256 / 390, road: 256 / 130 },
-  purple: { settlement: 256 / 410, city: 256 / 390, road: 256 / 130 },
+  green: { settlement: 244 / 282, city: 245 / 294, road: 232 / 75 },
+  purple: { settlement: 244 / 283, city: 245 / 294, road: 235 / 75 },
 };
 
 export const ROBBER_ART = '/icon/pieces/robber.webp';
