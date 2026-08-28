@@ -120,6 +120,18 @@ export const PLAYER_COLOR_HEX: Record<string, string> = {
 };
 
 /**
+ * Same palette, for use as *text* color (a player's name, a bonus holder's
+ * label, ...) rather than a filled swatch. White's actual swatch value is a
+ * near-white cream — legible as a small dot with a border around it, but
+ * unreadable as text on the app's light background, so it gets a darker
+ * stand-in here. Every other color is unchanged.
+ */
+export const PLAYER_COLOR_TEXT_HEX: Record<string, string> = {
+  ...PLAYER_COLOR_HEX,
+  white: '#756e5e',
+};
+
+/**
  * Rendered game-piece art (public/icon/pieces), one per player color, plus the
  * single black robber. Each PNG was extracted from the source sprite sheet as a
  * tight alpha-cropped cutout — the aspect ratio here is that crop's actual size,

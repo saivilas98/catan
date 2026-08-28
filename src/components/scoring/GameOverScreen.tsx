@@ -2,7 +2,7 @@ import type { GameState } from '../../game/models/types';
 import { getVictoryPointBreakdown } from '../../game/rules/scoring';
 import { calculateLongestRoadLength } from '../../game/rules/longestRoad';
 import { countPlayedKnights } from '../../game/rules/development';
-import { PLAYER_COLOR_HEX } from '../../data/terrainTheme';
+import { PLAYER_COLOR_HEX, PLAYER_COLOR_TEXT_HEX } from '../../data/terrainTheme';
 import { getPostGameStats } from '../../utils/postGameStats';
 
 interface GameOverScreenProps {
@@ -52,7 +52,7 @@ export function GameOverScreen({ game, onNewGame, onDismiss }: GameOverScreenPro
           <p className="game-over__eyebrow">Winner</p>
           <h1
             className="game-over__title"
-            style={{ color: winner ? PLAYER_COLOR_HEX[winner.color] : undefined }}
+            style={{ color: winner ? PLAYER_COLOR_TEXT_HEX[winner.color] : undefined }}
           >
             {winner ? winner.name : 'Game over'}
           </h1>

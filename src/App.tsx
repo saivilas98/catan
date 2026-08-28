@@ -646,10 +646,13 @@ function App() {
 
           const unsubscribeIdentity = networkClient.onMessage((message) => {
             if (message.type === 'YOUR_GAME_PLAYER_ID') {
+              // Just records which player this device is; it must NOT also
+              // open the private-hand view (setting unlockedPlayerId here
+              // would pop "Your Hand" open unrequested the instant the game
+              // starts). handleOpenPin() is what actually opens it, on
+              // demand, once the player taps "View My Cards" — see its
+              // network-mode branch below.
               setGamePlayerId(message.playerId);
-              // This device is that player, for the whole session — no PIN
-              // needed, unlike local mode's shared-screen handoff.
-              setUnlockedPlayerId(message.playerId);
             }
           });
           const unsubscribeState = transport.subscribe(

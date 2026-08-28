@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { GameState, ResourceCount, ResourceType } from '../../game/models/types';
 import { countResources, RESOURCE_TYPES } from '../../game/models/types';
 import { totalResourceCards } from '../../game/rules/robber';
-import { PLAYER_COLOR_HEX, RESOURCE_DISPLAY } from '../../data/terrainTheme';
+import { PLAYER_COLOR_TEXT_HEX, RESOURCE_DISPLAY } from '../../data/terrainTheme';
 import { ResourceStepper } from '../trade/ResourceStepper';
 
 interface DiscardModalProps {
@@ -43,7 +43,7 @@ export function DiscardModal({ game, onDiscard }: DiscardModalProps) {
           <p className="handoff-modal__eyebrow">Robber!</p>
           <h2 className="handoff-modal__title">
             Pass the laptop to{' '}
-            <span style={{ color: PLAYER_COLOR_HEX[player.color] }}>{player.name}</span>
+            <span style={{ color: PLAYER_COLOR_TEXT_HEX[player.color] }}>{player.name}</span>
           </h2>
           <p className="handoff-modal__body">
             {player.name} holds {handSize} resource cards and must discard{' '}
@@ -68,7 +68,7 @@ export function DiscardModal({ game, onDiscard }: DiscardModalProps) {
       <div className="discard-modal">
         <header className="discard-modal__header">
           <h2>
-            <span style={{ color: PLAYER_COLOR_HEX[player.color] }}>{player.name}</span>, discard{' '}
+            <span style={{ color: PLAYER_COLOR_TEXT_HEX[player.color] }}>{player.name}</span>, discard{' '}
             {requirement.required}
           </h2>
           <p className="discard-modal__sub">

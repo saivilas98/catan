@@ -2,7 +2,7 @@ import type { GameState } from '../../game/models/types';
 import { countPlayedKnights } from '../../game/rules/development';
 import { LONGEST_ROAD_MINIMUM } from '../../game/rules/longestRoad';
 import { LARGEST_ARMY_MINIMUM } from '../../game/models/types';
-import { PLAYER_COLOR_HEX } from '../../data/terrainTheme';
+import { PLAYER_COLOR_TEXT_HEX } from '../../data/terrainTheme';
 
 interface BonusIndicatorsProps {
   game: GameState;
@@ -22,7 +22,7 @@ export function BonusIndicators({ game }: BonusIndicatorsProps) {
         <span className="bonus-card__body">
           <span className="bonus-card__label">Longest Road</span>
           {roadHolder ? (
-            <span className="bonus-card__holder" style={{ color: PLAYER_COLOR_HEX[roadHolder.color] }}>
+            <span className="bonus-card__holder" style={{ color: PLAYER_COLOR_TEXT_HEX[roadHolder.color] }}>
               {roadHolder.name} · {game.longestRoadLength} roads
             </span>
           ) : (
@@ -39,7 +39,7 @@ export function BonusIndicators({ game }: BonusIndicatorsProps) {
         <span className="bonus-card__body">
           <span className="bonus-card__label">Largest Army</span>
           {armyHolder ? (
-            <span className="bonus-card__holder" style={{ color: PLAYER_COLOR_HEX[armyHolder.color] }}>
+            <span className="bonus-card__holder" style={{ color: PLAYER_COLOR_TEXT_HEX[armyHolder.color] }}>
               {armyHolder.name} · {countPlayedKnights(game, armyHolder.id)} knights
             </span>
           ) : (
