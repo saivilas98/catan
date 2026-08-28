@@ -98,22 +98,6 @@ export function HexBoard({
         aria-label="Catan game board"
       >
         <defs>
-          {/* Rounded-rect mask for the ocean photo, matching the sea rect below. */}
-          <clipPath id="sea-clip">
-            <rect
-              x={minX + HEX_SIZE * 0.38}
-              y={minY + HEX_SIZE * 0.38}
-              width={maxX - minX - HEX_SIZE * 0.76}
-              height={maxY - minY - HEX_SIZE * 0.76}
-              rx={HEX_SIZE * 0.35}
-            />
-          </clipPath>
-          {/* Wooden frame, lit softly from the top-left like everything else. */}
-          <linearGradient id="rim-wood" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#7a5533" />
-            <stop offset="45%" stopColor="#5b3d22" />
-            <stop offset="100%" stopColor="#472f1a" />
-          </linearGradient>
           {/* Shared tile lighting: light catches the top-left, shade pools bottom-right. */}
           <linearGradient id="hex-bevel" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#fff6e1" stopOpacity="0.17" />
@@ -134,52 +118,9 @@ export function HexBoard({
         </defs>
 
         <g transform={`rotate(-90 ${boardCenterX} ${boardCenterY})`}>
-        {/* The board frame: routed wooden rim around the sea. */}
-        <rect
-          x={minX}
-          y={minY}
-          width={maxX - minX}
-          height={maxY - minY}
-          rx={HEX_SIZE * 0.55}
-          fill="url(#rim-wood)"
-        />
-        {/* A real island-and-ocean photo fills the sea, clipped to the same
-            rounded rect the gradient used to occupy. It's a natural top-down
-            scene with no readable "up", so — like the hex terrain art — it
-            simply rotates along with the rest of the board; no counter-
-            rotation needed here. */}
-        <g clipPath="url(#sea-clip)">
-          <image
-            href="/hex/web/island-v2.webp"
-            x={minX + HEX_SIZE * 0.38}
-            y={minY + HEX_SIZE * 0.38}
-            width={maxX - minX - HEX_SIZE * 0.76}
-            height={maxY - minY - HEX_SIZE * 0.76}
-            preserveAspectRatio="xMidYMid slice"
-          />
-        </g>
-        <rect
-          x={minX + HEX_SIZE * 0.38}
-          y={minY + HEX_SIZE * 0.38}
-          width={maxX - minX - HEX_SIZE * 0.76}
-          height={maxY - minY - HEX_SIZE * 0.76}
-          rx={HEX_SIZE * 0.35}
-          fill="none"
-          stroke="#12333e"
-          strokeWidth={HEX_SIZE * 0.05}
-        />
-        {/* Inner rim highlight where light grazes the routed edge. */}
-        <rect
-          x={minX + HEX_SIZE * 0.33}
-          y={minY + HEX_SIZE * 0.33}
-          width={maxX - minX - HEX_SIZE * 0.66}
-          height={maxY - minY - HEX_SIZE * 0.66}
-          rx={HEX_SIZE * 0.38}
-          fill="none"
-          stroke="#8f6a40"
-          strokeWidth={HEX_SIZE * 0.035}
-          opacity={0.85}
-        />
+        {/* No board frame — the hexes float directly over the page's ocean
+            background (see .app-shell in App.css), so nothing but the tiles
+            and pieces themselves is drawn here. */}
 
         {board.hexes.map((hex) => (
           <HexTile
