@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { GameClient, loadSession, resolveHostUrl, saveSession } from '../../net/client';
 import type { SessionMode } from './ModeSelect';
+import { FullscreenButton } from '../layout/FullscreenButton';
 
 interface NetworkSetupProps {
   role: Extract<SessionMode, 'host' | 'join'>;
@@ -116,6 +117,7 @@ export function NetworkSetup({ role, onConnected, onBack }: NetworkSetupProps) {
   return (
     <div className="setup-screen">
       <div className="setup-table-glow" aria-hidden="true" />
+      <FullscreenButton className="setup-fullscreen-btn" />
       <div className="setup-card">
         <h1 className="setup-title">CATAN</h1>
         <p className="setup-subtitle">{role === 'host' ? 'Host a Network Game' : 'Join a Network Game'}</p>

@@ -2,6 +2,7 @@ import type { GameState } from '../../game/models/types';
 import { PLAYER_COLOR_HEX } from '../../data/terrainTheme';
 import { getSetupRound } from '../../game/engine/setup';
 import { phaseInstruction } from '../dice/phaseInstruction';
+import { FullscreenButton } from './FullscreenButton';
 
 interface TopBarLiteProps {
   game: GameState;
@@ -62,6 +63,7 @@ export function TopBarLite({ game, onOpenPlayers, onOpenMenu }: TopBarLiteProps)
             />
           ))}
         </button>
+        <FullscreenButton className="top-bar-lite__menu" />
         <button type="button" className="top-bar-lite__menu" onClick={onOpenMenu} aria-label="Menu">
           ≡
         </button>

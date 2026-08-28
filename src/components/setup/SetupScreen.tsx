@@ -4,6 +4,7 @@ import { MAX_PLAYERS, MIN_PLAYERS, PLAYER_COLORS } from '../../game/engine/gameE
 import { PLAYER_COLOR_HEX } from '../../data/terrainTheme';
 import { validatePlayerPins } from '../../utils/pin';
 import { HowToPlayModal } from '../help/HowToPlayModal';
+import { FullscreenButton } from '../layout/FullscreenButton';
 
 interface SetupScreenProps {
   onStart: (playerNames: string[], playerPins: string[]) => void;
@@ -55,6 +56,7 @@ export function SetupScreen({ onStart }: SetupScreenProps) {
   return (
     <div className="setup-screen">
       <div className="setup-table-glow" aria-hidden="true" />
+      <FullscreenButton className="setup-fullscreen-btn" />
       <div className="setup-card">
         <h1 className="setup-title">CATAN</h1>
         <p className="setup-subtitle">Build · Trade · Conquer</p>

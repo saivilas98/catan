@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { clearSession, type GameClient } from '../../net/client';
 import { MIN_PLAYERS } from '../../game/engine/gameEngine';
+import { FullscreenButton } from '../layout/FullscreenButton';
 
 interface LobbyPlayerView {
   playerId: string;
@@ -61,6 +62,7 @@ export function NetworkLobby({ client, playerId, isHost, onGameStarted, onLeave 
   return (
     <div className="setup-screen">
       <div className="setup-table-glow" aria-hidden="true" />
+      <FullscreenButton className="setup-fullscreen-btn" />
       <div className="setup-card">
         <h1 className="setup-title">CATAN</h1>
         <p className="setup-subtitle">Waiting Room</p>

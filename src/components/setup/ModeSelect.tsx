@@ -1,5 +1,6 @@
 import { HowToPlayModal } from '../help/HowToPlayModal';
 import { useState } from 'react';
+import { FullscreenButton } from '../layout/FullscreenButton';
 
 export type SessionMode = 'local' | 'host' | 'join';
 
@@ -17,6 +18,7 @@ export function ModeSelect({ onSelect }: ModeSelectProps) {
   return (
     <div className="setup-screen">
       <div className="setup-table-glow" aria-hidden="true" />
+      <FullscreenButton className="setup-fullscreen-btn" />
       <div className="setup-card">
         <h1 className="setup-title">CATAN</h1>
         <p className="setup-subtitle">Build · Trade · Conquer</p>
