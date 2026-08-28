@@ -5,7 +5,31 @@ import { validateGameState, validateResources } from '../rules/invariants';
 import { getValidRoadLocations, getValidSettlementLocations } from '../rules/placement';
 import type { GameState } from '../models/types';
 import { fixedDiceRng } from '../utils/fixedRng';
-import { expectOk, FOUR_PLAYERS, readyToAct, runFullSetup, THREE_PLAYERS } from './helpers';
+import { placeBuilding } from '../engine/construction';
+import {
+  expectOk,
+  FOUR_PLAYERS,
+  giveDevelopmentCard,
+  giveResources,
+  readyToAct,
+  runFullSetup,
+  SIX_PLAYERS,
+  THREE_PLAYERS,
+} from './helpers';
+
+/** Intersections far enough apart that each can hold its own building. */
+function spacedIntersections(state: GameState, count: number) {
+  const chosen: GameState['board']['intersections'] = [];
+  const taken = new Set<string>();
+  for (const intersection of state.board.intersections) {
+    if (chosen.length >= count) break;
+    if (taken.has(intersection.id)) continue;
+    chosen.push(intersection);
+    taken.add(intersection.id);
+    for (const neighbour of intersection.intersectionIds) taken.add(neighbour);
+  }
+  return chosen;
+}
 
 /** Asserts the state is structurally sound, reporting every violation at once. */
 function expectValid(state: GameState, context: string) {
@@ -23,6 +47,10 @@ describe('invariants: freshly created games', () => {
 
   it('holds for a new 4-player game', () => {
     expectValid(createInitialGame(FOUR_PLAYERS, 7), 'createInitialGame(4)');
+  });
+
+  it('holds for a new 6-player game (the larger expansion deck must not look overfull)', () => {
+    expectValid(createInitialGame(SIX_PLAYERS, 7), 'createInitialGame(6)');
   });
 
   it('holds across many seeds', () => {
@@ -209,5 +237,54 @@ describe('invariants: hold through ordinary turns', () => {
       game = expectOk(applyAction(game, { type: 'END_TURN', playerId }));
       expectValid(game, `end of turn ${turn}`);
     }
+  });
+});
+
+describe('invariants: winning mid Special Building Phase', () => {
+  it('clears specialBuildRoundOwnerId when the winning build happens during SBP', () => {
+    let game = readyToAct(SIX_PLAYERS, 3);
+    const spots = spacedIntersections(game, 5);
+
+    // Place 5 settlements, then use the real BUILD_CITY action to upgrade 3 of
+    // them — going through the actual upgrade path keeps piecesRemaining and
+    // settlementsBuilt/citiesBuilt bookkeeping correct (placeBuilding with type
+    // 'city' directly on an empty spot skips that bookkeeping; it's only ever
+    // meant to upgrade an existing settlement).
+    spots.forEach((spot) => {
+      game = placeBuilding(game, 'player-0', spot.id, 'settlement', { free: true });
+    });
+    game = giveResources(game, 'player-0', { ore: 9, grain: 6 });
+    spots.slice(0, 3).forEach((spot) => {
+      game = expectOk(
+        applyAction(game, { type: 'BUILD_CITY', playerId: 'player-0', intersectionId: spot.id })
+      );
+    });
+    // 3 cities (6) + 2 settlements (2) + 1 hidden VP card (1) = 9 VP, one short
+    // of winning, while leaving a city piece free to upgrade with.
+    game = giveDevelopmentCard(game, 'player-0', 'victoryPoint');
+
+    // Move into a Special Building slot for player-0, as if their normal turn
+    // had already ended and the cycle came back around to them.
+    game = {
+      ...game,
+      turnPhase: 'SPECIAL_BUILDING',
+      currentPlayerId: 'player-0',
+      specialBuildRoundOwnerId: 'player-5',
+    };
+    game = giveResources(game, 'player-0', { ore: 3, grain: 2 });
+
+    // Upgrading that settlement to a city (1 VP -> 2 VP) is the 10th point.
+    const result = applyAction(game, {
+      type: 'BUILD_CITY',
+      playerId: 'player-0',
+      intersectionId: spots[4].id,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.state.phase).toBe('GAME_OVER');
+    expect(result.state.winnerId).toBe('player-0');
+    expect(result.state.specialBuildRoundOwnerId).toBeNull();
+    expectValid(result.state, 'winning a build during Special Building Phase');
   });
 });

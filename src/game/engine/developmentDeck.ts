@@ -13,7 +13,7 @@ export const DEVELOPMENT_DECK_SIZE = Object.values(DEVELOPMENT_DECK_COMPOSITION)
 );
 
 /** Player count at which a game switches to the larger 5-6 player expansion deck. */
-const EXTENDED_DECK_PLAYER_THRESHOLD = 5;
+export const EXTENDED_DECK_PLAYER_THRESHOLD = 5;
 
 /**
  * Builds and shuffles the development card deck — the standard 25-card deck, or the

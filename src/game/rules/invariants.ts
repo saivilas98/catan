@@ -8,10 +8,12 @@
 import type { GameState, ResourceType } from '../models/types';
 import {
   DEVELOPMENT_DECK_COMPOSITION,
+  EXTENDED_DEVELOPMENT_DECK_COMPOSITION,
   PIECE_LIMITS,
   RESOURCE_TYPES,
 } from '../models/types';
 import { MAX_PLAYERS, MIN_PLAYERS, PLAYER_COLORS } from '../engine/gameEngine';
+import { EXTENDED_DECK_PLAYER_THRESHOLD } from '../engine/developmentDeck';
 import { validateBoard } from '../board/boardValidator';
 import { calculateVictoryPoints } from './scoring';
 
@@ -158,7 +160,14 @@ export function validateGameState(state: GameState): StateValidationResult {
     errors.push('A development card exists in more than one place');
   }
 
-  const deckTotal = Object.values(DEVELOPMENT_DECK_COMPOSITION).reduce((a, b) => a + b, 0);
+  // 5-6 player games start with the larger expansion deck (see developmentDeck.ts's
+  // own player-count threshold) — the cap here must match whichever deck this game
+  // actually started with, not always the base game's 25.
+  const composition =
+    state.players.length >= EXTENDED_DECK_PLAYER_THRESHOLD
+      ? EXTENDED_DEVELOPMENT_DECK_COMPOSITION
+      : DEVELOPMENT_DECK_COMPOSITION;
+  const deckTotal = Object.values(composition).reduce((a, b) => a + b, 0);
   // Cards granted by DEV tools are not from the deck, so only the deck itself is
   // bounded here; the true conservation check lives in the simulation test.
   if (state.developmentDeck.length > deckTotal) {

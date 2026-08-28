@@ -1017,7 +1017,17 @@ function finalize(state: GameState, actorId: string): GameState {
   if (!checkVictoryCondition(next, actorId)) return next;
 
   const total = calculateVictoryPoints(next, actorId);
-  next = { ...next, phase: 'GAME_OVER', winnerId: actorId, turnPhase: 'ENDING_TURN' };
+  next = {
+    ...next,
+    phase: 'GAME_OVER',
+    winnerId: actorId,
+    turnPhase: 'ENDING_TURN',
+    // The winning action can land mid Special Building Phase or mid Road
+    // Building — clear both so game-over state never carries a stale
+    // in-progress-phase marker forward.
+    specialBuildRoundOwnerId: null,
+    roadBuildingRoadsRemaining: 0,
+  };
   next = logEvent(next, {
     type: 'GAME_WON',
     playerId: actorId,

@@ -9,6 +9,7 @@ import { fixedDiceRng } from '../utils/fixedRng';
 
 export const THREE_PLAYERS = ['Sai', 'Rahul', 'Ananya'];
 export const FOUR_PLAYERS = ['Sai', 'Rahul', 'Ananya', 'Karthik'];
+export const SIX_PLAYERS = ['Sai', 'Rahul', 'Ananya', 'Karthik', 'Divya', 'Meera'];
 
 export function expectOk(result: ReturnType<typeof applyAction>): GameState {
   if (!result.ok) throw new Error(`Expected success, got: ${result.error.message}`);
