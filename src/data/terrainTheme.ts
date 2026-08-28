@@ -149,10 +149,12 @@ export const PLAYER_PIECE_ART: Record<
     city: '/icon/pieces/orange-city.webp',
     road: '/icon/pieces/orange-road.webp',
   },
-  // Tight alpha cutouts extracted from icon_new.png's own alpha channel (isolating
-  // the largest connected opaque region per piece, same end result as the other 4
-  // colors' cutouts — see PIECE_ASPECT_OVERRIDE for their slightly different crop
-  // proportions).
+  // Settlements/cities are tight alpha cutouts extracted from icon_new.png's own
+  // alpha channel (isolating the largest connected opaque region per piece — see
+  // PIECE_ASPECT_OVERRIDE for their slightly different crop proportions). Roads
+  // are NOT from icon_new.png — that source's road art didn't match the other 4
+  // colors' long, flat bar shape, so these are white-road.webp recolored (hue
+  // lifted from the settlement art) to keep every color's road looking the same.
   green: {
     settlement: '/icon/pieces/green-settlement.png',
     city: '/icon/pieces/green-city.png',
@@ -175,12 +177,16 @@ export const PIECE_ASPECT: { settlement: number; city: number; road: number } = 
 /**
  * Override aspect ratios for colors whose art wasn't cropped to the same
  * tight-cutout convention as the original 4 (see the comment on PLAYER_PIECE_ART).
+ * Green/purple's roads are recolored from the same source art as the other 4
+ * colors (see PLAYER_PIECE_ART's comment), so they need no override here — only
+ * their settlement/city pieces, sourced from icon_new.png, have different
+ * proportions.
  */
 export const PIECE_ASPECT_OVERRIDE: Partial<
-  Record<PlayerColor, { settlement: number; city: number; road: number }>
+  Record<PlayerColor, Partial<{ settlement: number; city: number; road: number }>>
 > = {
-  green: { settlement: 244 / 282, city: 245 / 294, road: 232 / 75 },
-  purple: { settlement: 244 / 283, city: 245 / 294, road: 235 / 75 },
+  green: { settlement: 244 / 282, city: 245 / 294 },
+  purple: { settlement: 244 / 283, city: 245 / 294 },
 };
 
 export const ROBBER_ART = '/icon/pieces/robber.webp';
