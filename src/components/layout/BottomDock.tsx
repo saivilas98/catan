@@ -69,6 +69,8 @@ export function BottomDock({
         })}
       </div>
 
+      <div className="bottom-dock__divider" aria-hidden="true" />
+
       <div className="bottom-dock__actions">
         <button
           type="button"
