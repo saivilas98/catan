@@ -117,14 +117,14 @@ export function PlayerPanel({
       )}
 
       <div className="player-panel__footer">
-        <span className="piece-tally" title="Roads remaining">
-          🛤 {player.piecesRemaining.road}
+        <span className="piece-tally" title="Roads left to place">
+          🛤 {player.piecesRemaining.road} left
         </span>
-        <span className="piece-tally" title="Settlements remaining">
-          🏠 {player.piecesRemaining.settlement}
+        <span className="piece-tally" title="Settlements left to place">
+          🏠 {player.piecesRemaining.settlement} left
         </span>
-        <span className="piece-tally" title="Cities remaining">
-          🏛 {player.piecesRemaining.city}
+        <span className="piece-tally" title="Cities left to place">
+          🏛 {player.piecesRemaining.city} left
         </span>
       </div>
 

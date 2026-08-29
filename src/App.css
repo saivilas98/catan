@@ -1041,14 +1041,6 @@
   color: var(--ink);
 }
 
-.player-panel__footer {
-  font-size: 0.63rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--ink-faint);
-  text-align: right;
-}
-
 /*
  * ---------- Compact player panels: the perimeter rail above the board ----------
  * Same component and the same data as the old right-sidebar cards — just a
@@ -1506,6 +1498,7 @@
 
 .piece-tally {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .player-panel__cards {
